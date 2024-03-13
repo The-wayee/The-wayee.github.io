@@ -101,7 +101,7 @@
                       alt="唯一id"
                 ></p>
 <h3 id="定义一个工具类为RedisIdWorker"><a href="#定义一个工具类为RedisIdWorker" class="headerlink" title="定义一个工具类为RedisIdWorker"></a>定义一个工具类为RedisIdWorker</h3><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RedisIdWorker</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2024/1/1-00:00</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">BEGIN_TIMESTAMP</span> <span class="operator">=</span> <span class="number">1704067200L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 序列号的位数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">COUNT_BITS</span> <span class="operator">=</span> <span class="number">32</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">nextId</span><span class="params">(String keyPrefix)</span> &#123;</span><br><span class="line">        <span class="comment">//1.生成时间戳</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">now</span> <span class="operator">=</span> LocalDateTime.now();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//东八区当前时间距离设定的开始时间间隔</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">timestamp</span> <span class="operator">=</span> now.toEpochSecond(ZoneOffset.UTC) - BEGIN_TIMESTAMP;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//2.生成序列号</span></span><br><span class="line">        <span class="comment">//2.1获取当前日期，精确到天</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">date</span> <span class="operator">=</span> now.format(DateTimeFormatter.ofPattern(<span class="string">&quot;yyyyMMdd&quot;</span>));</span><br><span class="line">        <span class="comment">//2.2自增长</span></span><br><span class="line">        <span class="type">Long</span> <span class="variable">count</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().increment(<span class="string">&quot;icr:&quot;</span> + keyPrefix + <span class="string">&quot;:&quot;</span> + date);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//3.拼接并返回</span></span><br><span class="line">        <span class="keyword">return</span> timestamp &lt;&lt; COUNT_BITS | count;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<h2 id="二-实现秒杀下单"><a href="#二-实现秒杀下单" class="headerlink" title="二.实现秒杀下单"></a>二.实现秒杀下单</h2><h3 id="中间用乐观锁来解决超卖问题"><a href="#中间用乐观锁来解决超卖问题" class="headerlink" title="中间用乐观锁来解决超卖问题"></a>中间用乐观锁来解决超卖问题</h3><p>   <img  
+<h2 id="实现秒杀下单"><a href="#实现秒杀下单" class="headerlink" title="实现秒杀下单"></a>实现秒杀下单</h2><h3 id="中间用乐观锁来解决超卖问题"><a href="#中间用乐观锁来解决超卖问题" class="headerlink" title="中间用乐观锁来解决超卖问题"></a>中间用乐观锁来解决超卖问题</h3><p>   <img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ms_02.png"
@@ -109,12 +109,12 @@
                 ></p>
 <div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">createVoucherOrder</span><span class="params">(Long voucherId)</span> &#123;</span><br><span class="line">    <span class="comment">//5.一人一单</span></span><br><span class="line">    <span class="type">Long</span> <span class="variable">userId</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">    <span class="comment">//5.1查询订单</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> query().eq(<span class="string">&quot;user_id&quot;</span>, userId).eq(<span class="string">&quot;voucher_id&quot;</span>, voucherId).count();</span><br><span class="line">    <span class="comment">//5.2判断是否存在</span></span><br><span class="line">    <span class="keyword">if</span>(count &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">//用户已经购买</span></span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;用户已经购买&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//6.扣减库存</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">success</span> <span class="operator">=</span> seckillVoucherService.update()</span><br><span class="line">            .setSql(<span class="string">&quot;stock = stock - 1&quot;</span>)</span><br><span class="line">            .eq(<span class="string">&quot;voucher_id&quot;</span>, voucherId)</span><br><span class="line">            .gt(<span class="string">&quot;stock&quot;</span>, <span class="number">0</span>) <span class="comment">//乐观锁   where id = ? and stock &gt; 0</span></span><br><span class="line">            .update();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(!success) &#123;</span><br><span class="line">        <span class="comment">// 扣减失败</span></span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;库存不足&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//7.创建订单</span></span><br><span class="line">    <span class="type">VoucherOrder</span> <span class="variable">voucherOrder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">VoucherOrder</span>();</span><br><span class="line">    <span class="comment">//7.1订单id</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">orderId</span> <span class="operator">=</span> redisIdWorker.nextId(<span class="string">&quot;order&quot;</span>);</span><br><span class="line">    voucherOrder.setId(orderId);</span><br><span class="line">    <span class="comment">//7.2用户id</span></span><br><span class="line">    voucherOrder.setUserId(userId);</span><br><span class="line">    <span class="comment">//7.3代金券id</span></span><br><span class="line">    voucherOrder.setVoucherId(voucherId);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//新增订单</span></span><br><span class="line">    save(voucherOrder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//8.返回订单Id</span></span><br><span class="line">    <span class="keyword">return</span> Result.ok(orderId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
 
-<h2 id="三-实现一人一单"><a href="#三-实现一人一单" class="headerlink" title="三.实现一人一单"></a>三.实现一人一单</h2><p>根据用户id和优惠券id查询订单，如果已经购买过，就不允许再次购买<br>使用用户id来加锁，保证多线程使用同一个userId来下单时，串行执行下单动作<br><strong>加锁的时候也要使用字符串常量池</strong></p>
+<h2 id="实现一人一单"><a href="#实现一人一单" class="headerlink" title="实现一人一单"></a>实现一人一单</h2><p>根据用户id和优惠券id查询订单，如果已经购买过，就不允许再次购买<br>使用用户id来加锁，保证多线程使用同一个userId来下单时，串行执行下单动作<br><strong>加锁的时候也要使用字符串常量池</strong></p>
 <div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//获取用户Id</span></span><br><span class="line"><span class="type">Long</span> <span class="variable">userId</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line"><span class="comment">//toString方法底层也是new了一个数据，导致相同的字符串不能被锁住</span></span><br><span class="line"><span class="comment">//调用intern字符串常量池，保证相同的字符串能加锁</span></span><br><span class="line"><span class="keyword">synchronized</span> (userId.toString().intern()) &#123;</span><br><span class="line">    <span class="comment">//获取代理对象，保证事务正确生效（注意上面的createVoucherOrder被spring事务管理，事务需要获取代理对象）</span></span><br><span class="line">    <span class="type">IVoucherOrderService</span> <span class="variable">proxy</span> <span class="operator">=</span> (IVoucherOrderService) AopContext.currentProxy();</span><br><span class="line">    <span class="keyword">return</span> proxy.createVoucherOrder(voucherId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<h2 id="四-分布式锁"><a href="#四-分布式锁" class="headerlink" title="四.分布式锁"></a>四.分布式锁</h2><p><strong>在Redis集群中，简单的<em>synchronized</em>将不起作用。因为会有多个JVM，而每个<em>synchronized</em>只能监视自己的JVM</strong><br><strong>解决：利用Redis中的setnx(<em>set not exist</em>)，使所有的JVM都能可见的锁监视器</strong></p>
-<h3 id="1-定义一个工具类SimpleRedisLock"><a href="#1-定义一个工具类SimpleRedisLock" class="headerlink" title="1.定义一个工具类SimpleRedisLock"></a>1.定义一个工具类SimpleRedisLock</h3><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SimpleRedisLock</span> <span class="keyword">implements</span> <span class="title class_">ILock</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">KEY_PREFIX</span> <span class="operator">=</span> <span class="string">&quot;lock:&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">ID_PREFIX</span> <span class="operator">=</span> UUID.randomUUID().toString(<span class="literal">true</span>) + <span class="string">&quot;-&quot;</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">SimpleRedisLock</span><span class="params">(String name, StringRedisTemplate stringRedisTemplate)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.stringRedisTemplate = stringRedisTemplate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(<span class="type">long</span> timeoutSec)</span> &#123;</span><br><span class="line">        <span class="comment">//获取线程标识</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">threadId</span> <span class="operator">=</span> ID_PREFIX + Thread.currentThread().getId();</span><br><span class="line">        <span class="comment">//获取锁(利用setnx操作)</span></span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">success</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + name, threadId, timeoutSec, TimeUnit.SECONDS);</span><br><span class="line">        <span class="keyword">return</span> BooleanUtil.isTrue(success);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">//释放锁</span></span><br><span class="line">        stringRedisTemplate.delete(KEY_PREFIX + name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<h2 id="分布式锁"><a href="#分布式锁" class="headerlink" title="分布式锁"></a>分布式锁</h2><p><strong>在Redis集群中，简单的<em>synchronized</em>将不起作用。因为会有多个JVM，而每个<em>synchronized</em>只能监视自己的JVM</strong><br><strong>解决：利用Redis中的setnx(<em>set not exist</em>)，使所有的JVM都能可见的锁监视器</strong></p>
+<h3 id="定义一个工具类SimpleRedisLock"><a href="#定义一个工具类SimpleRedisLock" class="headerlink" title="定义一个工具类SimpleRedisLock"></a>定义一个工具类SimpleRedisLock</h3><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SimpleRedisLock</span> <span class="keyword">implements</span> <span class="title class_">ILock</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">KEY_PREFIX</span> <span class="operator">=</span> <span class="string">&quot;lock:&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">ID_PREFIX</span> <span class="operator">=</span> UUID.randomUUID().toString(<span class="literal">true</span>) + <span class="string">&quot;-&quot;</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">SimpleRedisLock</span><span class="params">(String name, StringRedisTemplate stringRedisTemplate)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.stringRedisTemplate = stringRedisTemplate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(<span class="type">long</span> timeoutSec)</span> &#123;</span><br><span class="line">        <span class="comment">//获取线程标识</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">threadId</span> <span class="operator">=</span> ID_PREFIX + Thread.currentThread().getId();</span><br><span class="line">        <span class="comment">//获取锁(利用setnx操作)</span></span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">success</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + name, threadId, timeoutSec, TimeUnit.SECONDS);</span><br><span class="line">        <span class="keyword">return</span> BooleanUtil.isTrue(success);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">//释放锁</span></span><br><span class="line">        stringRedisTemplate.delete(KEY_PREFIX + name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
 
-<h3 id="2-解决Redis分布式锁的误删问题"><a href="#2-解决Redis分布式锁的误删问题" class="headerlink" title="2.解决Redis分布式锁的误删问题"></a>2.解决Redis分布式锁的误删问题</h3><p>在第一个线程业务还没完成，但是线程一锁的TTL到期了，导致超时释放锁。这时线程二又进来重新获取锁，业务完成后主动释放锁，导致线程删除的是其他线程的锁</p>
+<h3 id="解决Redis分布式锁的误删问题"><a href="#解决Redis分布式锁的误删问题" class="headerlink" title="解决Redis分布式锁的误删问题"></a>解决Redis分布式锁的误删问题</h3><p>在第一个线程业务还没完成，但是线程一锁的TTL到期了，导致超时释放锁。这时线程二又进来重新获取锁，业务完成后主动释放锁，导致线程删除的是其他线程的锁</p>
 <p>解决：在删除锁的时候判断锁是否是自己的<br><img  
                      lazyload
                      src="/images/loading.svg"
@@ -128,7 +128,7 @@
                 ></p>
 <div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">//获取线程标识</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">threadId</span> <span class="operator">=</span> ID_PREFIX + Thread.currentThread().getId();</span><br><span class="line">    <span class="comment">//获取锁中标识</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">id</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(KEY_PREFIX + name);</span><br><span class="line">    <span class="comment">//判断标识是否一致</span></span><br><span class="line">    <span class="keyword">if</span>(threadId.equals(id)) &#123;</span><br><span class="line">        <span class="comment">//释放锁</span></span><br><span class="line">        stringRedisTemplate.delete(KEY_PREFIX + name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
 
-<h3 id="3-使用lua脚本解决命令原子性问题"><a href="#3-使用lua脚本解决命令原子性问题" class="headerlink" title="3.使用lua脚本解决命令原子性问题"></a>3.使用lua脚本解决命令原子性问题</h3><p><strong>在线程释放锁的时候如果出现阻塞（可能是JVM在OG回收），导致业务还未完成，锁又被超时释放了。将又出现上面误删锁的情况</strong><br><img  
+<h3 id="使用lua脚本解决命令原子性问题"><a href="#使用lua脚本解决命令原子性问题" class="headerlink" title="使用lua脚本解决命令原子性问题"></a>使用lua脚本解决命令原子性问题</h3><p><strong>在线程释放锁的时候如果出现阻塞（可能是JVM在OG回收），导致业务还未完成，锁又被超时释放了。将又出现上面误删锁的情况</strong><br><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ms_05.png"
@@ -144,7 +144,7 @@
                 ></p>
 <h4 id="改造SimpleRedisLock代码"><a href="#改造SimpleRedisLock代码" class="headerlink" title="改造SimpleRedisLock代码"></a>改造SimpleRedisLock代码</h4><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SimpleRedisLock</span> <span class="keyword">implements</span> <span class="title class_">ILock</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">KEY_PREFIX</span> <span class="operator">=</span> <span class="string">&quot;lock:&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">ID_PREFIX</span> <span class="operator">=</span> UUID.randomUUID().toString(<span class="literal">true</span>) + <span class="string">&quot;-&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> DefaultRedisScript&lt;Long&gt; UNLOCK_SCRIPT;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> &#123;</span><br><span class="line">        UNLOCK_SCRIPT = <span class="keyword">new</span> <span class="title class_">DefaultRedisScript</span>&lt;&gt;();</span><br><span class="line">        UNLOCK_SCRIPT.setLocation(<span class="keyword">new</span> <span class="title class_">ClassPathResource</span>(<span class="string">&quot;unlock.lua&quot;</span>)); <span class="comment">//指定lua脚本的位置</span></span><br><span class="line">        UNLOCK_SCRIPT.setResultType(Long.class);  <span class="comment">//指定lua脚本返回的类型</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">SimpleRedisLock</span><span class="params">(String name, StringRedisTemplate stringRedisTemplate)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.stringRedisTemplate = stringRedisTemplate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(<span class="type">long</span> timeoutSec)</span> &#123;</span><br><span class="line">        <span class="comment">//获取线程标识</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">threadId</span> <span class="operator">=</span> ID_PREFIX + Thread.currentThread().getId();</span><br><span class="line">        <span class="comment">//获取锁</span></span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">success</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().setIfAbsent(KEY_PREFIX + name, threadId, timeoutSec, TimeUnit.SECONDS);</span><br><span class="line">        <span class="keyword">return</span> BooleanUtil.isTrue(success);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">()</span> &#123;</span><br><span class="line">        stringRedisTemplate.execute(</span><br><span class="line">                UNLOCK_SCRIPT,</span><br><span class="line">                Collections.singletonList(KEY_PREFIX + name),</span><br><span class="line">                ID_PREFIX + Thread.currentThread().getId());</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></div>
 
-<h3 id="4-Redisson实现可重入锁"><a href="#4-Redisson实现可重入锁" class="headerlink" title="4.Redisson实现可重入锁"></a>4.Redisson实现可重入锁</h3><h4 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h4><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.redisson&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;redisson&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;<span class="number">3.23</span><span class="number">.1</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure></div>
+<h3 id="Redisson实现可重入锁"><a href="#Redisson实现可重入锁" class="headerlink" title="Redisson实现可重入锁"></a>Redisson实现可重入锁</h3><h4 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h4><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.redisson&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;redisson&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;<span class="number">3.23</span><span class="number">.1</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure></div>
 
 <h4 id="配置Redisson客户端"><a href="#配置Redisson客户端" class="headerlink" title="配置Redisson客户端"></a>配置Redisson客户端</h4><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RedisConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RedissonClient <span class="title function_">redissonClient</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">// 配置</span></span><br><span class="line">        <span class="type">Config</span> <span class="variable">config</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Config</span>();</span><br><span class="line">        <span class="comment">//这里添加单点地址，也可以用config.useClusterServers()，添加集群地址</span></span><br><span class="line">        config.useSingleServer().setAddress(<span class="string">&quot;redis://192.168.28.135:6379&quot;</span>).setPassword(<span class="string">&quot;root&quot;</span>);</span><br><span class="line">        <span class="comment">//添加客户端</span></span><br><span class="line">        <span class="keyword">return</span> Redisson.create(config);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
 <h4 id="使用Redisson"><a href="#使用Redisson" class="headerlink" title="使用Redisson"></a>使用Redisson</h4><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> RedissonClient redissonClient;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">testRedisson</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">    <span class="comment">//获取锁（可重入），指定锁的名称</span></span><br><span class="line">    <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(<span class="string">&quot;anyLock&quot;</span>);</span><br><span class="line">    <span class="comment">//尝试获取锁， 参数分别是： 获取锁的最大等待时间（期间会重试）， 锁自动释放时间，时间单位</span></span><br><span class="line">    <span class="type">boolean</span> <span class="variable">isLock</span> <span class="operator">=</span> lock.tryLock(<span class="number">1</span>, <span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line">    <span class="comment">//判断锁是否成功</span></span><br><span class="line">    <span class="keyword">if</span>(isLock)&#123;</span><br><span class="line">        <span class="comment">//成功</span></span><br><span class="line">        System.out.println(<span class="string">&quot;获取锁成功&quot;</span>);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
@@ -176,19 +176,19 @@
                 ></p>
 <p><strong>mutiLock源码</strong></p>
 <div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(<span class="type">long</span> waitTime, <span class="type">long</span> leaseTime, TimeUnit unit)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">    <span class="type">long</span> <span class="variable">newLeaseTime</span> <span class="operator">=</span> -<span class="number">1L</span>;</span><br><span class="line">    <span class="keyword">if</span> (leaseTime &gt; <span class="number">0L</span>) &#123;   <span class="comment">//判断是否传入leaseTime, 不传默认为-1</span></span><br><span class="line">        <span class="keyword">if</span> (waitTime &gt; <span class="number">0L</span>) &#123;    <span class="comment">//传了leaseTime，将leaseTime更新为waitTime的两倍，防止在等待时锁被释放</span></span><br><span class="line">            newLeaseTime = unit.toMillis(waitTime) * <span class="number">2L</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            newLeaseTime = unit.toMillis(leaseTime);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">long</span> <span class="variable">time</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">    <span class="type">long</span> <span class="variable">remainTime</span> <span class="operator">=</span> -<span class="number">1L</span>;  <span class="comment">//剩余时间</span></span><br><span class="line">    <span class="keyword">if</span> (waitTime &gt; <span class="number">0L</span>) &#123;</span><br><span class="line">        remainTime = unit.toMillis(waitTime);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">long</span> <span class="variable">lockWaitTime</span> <span class="operator">=</span> <span class="built_in">this</span>.calcLockWaitTime(remainTime);</span><br><span class="line">    <span class="type">int</span> <span class="variable">failedLocksLimit</span> <span class="operator">=</span> <span class="built_in">this</span>.failedLocksLimit();</span><br><span class="line">    List&lt;RLock&gt; acquiredLocks = <span class="keyword">new</span> <span class="title class_">ArrayList</span>(<span class="built_in">this</span>.locks.size());   <span class="comment">//获得锁的集合列表</span></span><br><span class="line">    ListIterator&lt;RLock&gt; iterator = <span class="built_in">this</span>.locks.listIterator();   <span class="comment">//连锁的迭代器</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(iterator.hasNext()) &#123;     <span class="comment">//遍历连锁</span></span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> (RLock)iterator.next();</span><br><span class="line"></span><br><span class="line">        <span class="type">boolean</span> lockAcquired;</span><br><span class="line">        <span class="keyword">try</span> &#123;   <span class="comment">//尝试获取锁</span></span><br><span class="line">            <span class="keyword">if</span> (waitTime &lt;= <span class="number">0L</span> &amp;&amp; leaseTime &lt;= <span class="number">0L</span>) &#123;</span><br><span class="line">                lockAcquired = lock.tryLock();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="type">long</span> <span class="variable">awaitTime</span> <span class="operator">=</span> Math.min(lockWaitTime, remainTime);</span><br><span class="line">                lockAcquired = lock.tryLock(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RedisResponseTimeoutException var21) &#123;</span><br><span class="line">            <span class="built_in">this</span>.unlockInner(Arrays.asList(lock));</span><br><span class="line">            lockAcquired = <span class="literal">false</span>;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception var22) &#123;</span><br><span class="line">            lockAcquired = <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (lockAcquired) &#123;     <span class="comment">//获取锁成功，加入锁集合</span></span><br><span class="line">            acquiredLocks.add(lock);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//锁的个数 - 已经获得锁的个数 == 失败锁的上限个数    failedLocksLimit() 为0</span></span><br><span class="line">            <span class="comment">//换言之，只有获取到了所有锁才能跳出循环</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">this</span>.locks.size() - acquiredLocks.size() == <span class="built_in">this</span>.failedLocksLimit()) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (failedLocksLimit == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">//否则，将之前已经获取的锁施放</span></span><br><span class="line">                <span class="built_in">this</span>.unlockInner(acquiredLocks);</span><br><span class="line">                <span class="keyword">if</span> (waitTime &lt;= <span class="number">0L</span>) &#123;   <span class="comment">//如果不重试，直接返回false</span></span><br><span class="line">                    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//如果重试，清空已经获取的锁集合</span></span><br><span class="line">                failedLocksLimit = <span class="built_in">this</span>.failedLocksLimit();</span><br><span class="line">                acquiredLocks.clear();</span><br><span class="line">                <span class="comment">//指向锁迭代器的头部，下次重头获取锁</span></span><br><span class="line">                <span class="keyword">while</span>(iterator.hasPrevious()) &#123;</span><br><span class="line">                    iterator.previous();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                --failedLocksLimit;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (remainTime &gt; <span class="number">0L</span>) &#123;</span><br><span class="line">            remainTime -= System.currentTimeMillis() - time;</span><br><span class="line">            time = System.currentTimeMillis();</span><br><span class="line">            <span class="keyword">if</span> (remainTime &lt;= <span class="number">0L</span>) &#123;     <span class="comment">//判断在获取锁后剩余有效期</span></span><br><span class="line">                <span class="built_in">this</span>.unlockInner(acquiredLocks);    <span class="comment">//如果没有剩余有效期， 释放之前获得的锁</span></span><br><span class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (leaseTime &gt; <span class="number">0L</span>) &#123;   <span class="comment">//如果设置了释放时间   （没有设置锁的有效期会走看门狗，自动续约锁有效期）</span></span><br><span class="line">        acquiredLocks.stream().map((l) -&gt; &#123;</span><br><span class="line">            <span class="keyword">return</span> (RedissonBaseLock)l;</span><br><span class="line">        &#125;).map((l) -&gt; &#123;     <span class="comment">//对获取的每个锁重新设置释放时间，先获取的锁会先进行倒计时，后获取的锁会后倒计时，导致锁的有效期不一致</span></span><br><span class="line">            <span class="keyword">return</span> l.expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS);</span><br><span class="line">        &#125;).forEach((f) -&gt; &#123;</span><br><span class="line">            f.toCompletableFuture().join();</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<h3 id="Redis分布式锁总结"><a href="#Redis分布式锁总结" class="headerlink" title="Redis分布式锁总结"></a>Redis分布式锁总结</h3><h4 id="1-不可重入Redis分布式锁："><a href="#1-不可重入Redis分布式锁：" class="headerlink" title="1) 不可重入Redis分布式锁："></a>1) 不可重入Redis分布式锁：</h4><ul>
+<h3 id="Redis分布式锁总结"><a href="#Redis分布式锁总结" class="headerlink" title="Redis分布式锁总结"></a>Redis分布式锁总结</h3><h4 id="不可重入Redis分布式锁："><a href="#不可重入Redis分布式锁：" class="headerlink" title="不可重入Redis分布式锁："></a>不可重入Redis分布式锁：</h4><ul>
 <li>原理： 利用setnx的互斥性，利用ex避免死锁，释放锁时判断线程标识</li>
 <li>缺陷：不可重入，无法重试，锁超时失效</li>
 </ul>
-<h4 id="2-可重入的Redis分布式锁："><a href="#2-可重入的Redis分布式锁：" class="headerlink" title="2) 可重入的Redis分布式锁："></a>2) 可重入的Redis分布式锁：</h4><ul>
+<h4 id="可重入的Redis分布式锁："><a href="#可重入的Redis分布式锁：" class="headerlink" title="可重入的Redis分布式锁："></a>可重入的Redis分布式锁：</h4><ul>
 <li>原理：利用hash结构，记录线程标识和重入次数，利用watchDog延续锁时间，利用信号量控制锁重试等待</li>
 <li>缺陷：redis宕机引起锁失效问题</li>
 </ul>
-<h4 id="3-Redisson的mutiLock"><a href="#3-Redisson的mutiLock" class="headerlink" title="3) Redisson的mutiLock"></a>3) Redisson的mutiLock</h4><ul>
+<h4 id="Redisson的mutiLock"><a href="#Redisson的mutiLock" class="headerlink" title="Redisson的mutiLock"></a>Redisson的mutiLock</h4><ul>
 <li>原理：多个独立的Redis节点，必须在所有节点都获取重入锁，才算获取锁成功</li>
 <li>缺陷：运维成本高，实现复杂</li>
 </ul>
-<h2 id="五-Redis优化秒杀"><a href="#五-Redis优化秒杀" class="headerlink" title="五.Redis优化秒杀"></a>五.Redis优化秒杀</h2><ul>
+<h2 id="Redis优化秒杀"><a href="#Redis优化秒杀" class="headerlink" title="Redis优化秒杀"></a>Redis优化秒杀</h2><ul>
 <li>优化前：所有步骤都是串行执行，对数据库的操作会占用很长时间，效率很低，并发能力差</li>
 <li>优化后：将查询库存，查询订单的操作放到Redis中，如果成功在异步开启线程对数据库进行写操作<br><img  
                      lazyload
@@ -208,13 +208,13 @@
                       alt="秒杀优化缓存"
                 ></li>
 </ul>
-<h3 id="1-需求分析"><a href="#1-需求分析" class="headerlink" title="1.需求分析"></a>1.需求分析</h3><p><img  
+<h3 id="需求分析"><a href="#需求分析" class="headerlink" title="需求分析"></a>需求分析</h3><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ms_12.png"
                       alt="秒杀优化需求"
                 ></p>
-<h3 id="2-代码编写"><a href="#2-代码编写" class="headerlink" title="2.代码编写"></a>2.代码编写</h3><p>1 将优惠券信息保存到Redis中</p>
+<h3 id="代码编写"><a href="#代码编写" class="headerlink" title="代码编写"></a>代码编写</h3><p>1 将优惠券信息保存到Redis中</p>
 <div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addSeckillVoucher</span><span class="params">(Voucher voucher)</span> &#123;</span><br><span class="line">    <span class="comment">// 保存优惠券</span></span><br><span class="line">    save(voucher);</span><br><span class="line">    <span class="comment">// 保存秒杀信息</span></span><br><span class="line">    <span class="type">SeckillVoucher</span> <span class="variable">seckillVoucher</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SeckillVoucher</span>();</span><br><span class="line">    seckillVoucher.setVoucherId(voucher.getId());</span><br><span class="line">    seckillVoucher.setStock(voucher.getStock());</span><br><span class="line">    seckillVoucher.setBeginTime(voucher.getBeginTime());</span><br><span class="line">    seckillVoucher.setEndTime(voucher.getEndTime());</span><br><span class="line">    seckillVoucherService.save(seckillVoucher);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//保存秒杀库存到Redis中</span></span><br><span class="line">    stringRedisTemplate.opsForValue().set(SECKILL_STOCK_KEY + voucher.getId(), voucher.getStock().toString());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
 
 
@@ -238,7 +238,7 @@
 <li><p><em>整体秒杀业务</em></p>
 <div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">VoucherOrderServiceImpl</span> <span class="keyword">extends</span> <span class="title class_">ServiceImpl</span>&lt;VoucherOrderMapper, VoucherOrder&gt; <span class="keyword">implements</span> <span class="title class_">IVoucherOrderService</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> ISeckillVoucherService seckillVoucherService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> RedisIdWorker redisIdWorker;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> IVoucherOrderService proxy;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//线程池</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ExecutorService</span> <span class="variable">SECKILL_ORDER_EXECUTOR</span> <span class="operator">=</span> Executors.newSingleThreadExecutor();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//阻塞队列</span></span><br><span class="line">    <span class="keyword">private</span> BlockingQueue&lt;VoucherOrder&gt; orderTasks = <span class="keyword">new</span> <span class="title class_">ArrayBlockingQueue</span>&lt;&gt;(<span class="number">1024</span> * <span class="number">1024</span>);</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PostConstruct</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span> &#123;</span><br><span class="line">        SECKILL_ORDER_EXECUTOR.submit(<span class="keyword">new</span> <span class="title class_">VoucherOrderHandler</span>());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">class</span> <span class="title class_">VoucherOrderHandler</span> <span class="keyword">implements</span> <span class="title class_">Runnable</span> &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">//1.获取阻塞队列的中的订单信息</span></span><br><span class="line">                    <span class="type">VoucherOrder</span> <span class="variable">voucherOrder</span> <span class="operator">=</span> orderTasks.take();</span><br><span class="line">                    <span class="comment">//2.创建订单</span></span><br><span class="line">                    handleVoucherOrder(voucherOrder);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                    log.error(<span class="string">&quot;处理订单信息异常&quot;</span> + e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">handleVoucherOrder</span><span class="params">(VoucherOrder voucherOrder)</span> &#123;</span><br><span class="line">            proxy.createVoucherOrder(voucherOrder);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Transactional</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createVoucherOrder</span><span class="params">(VoucherOrder voucherOrder)</span> &#123;</span><br><span class="line">        <span class="comment">//5.一人一单</span></span><br><span class="line">        <span class="type">Long</span> <span class="variable">userId</span> <span class="operator">=</span> voucherOrder.getUserId();</span><br><span class="line">        <span class="comment">//5.1查询订单</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> query().eq(<span class="string">&quot;user_id&quot;</span>, userId).eq(<span class="string">&quot;voucher_id&quot;</span>, voucherOrder.getVoucherId()).count();</span><br><span class="line">        <span class="comment">//5.2判断是否存在</span></span><br><span class="line">        <span class="keyword">if</span>(count &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">//用户已经购买</span></span><br><span class="line">            log.error(<span class="string">&quot;用户已经购买&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//6.扣减库存</span></span><br><span class="line">        <span class="type">boolean</span> <span class="variable">success</span> <span class="operator">=</span> seckillVoucherService.update()</span><br><span class="line">                .setSql(<span class="string">&quot;stock = stock - 1&quot;</span>)</span><br><span class="line">                .eq(<span class="string">&quot;voucher_id&quot;</span>, voucherOrder.getVoucherId())</span><br><span class="line">                .gt(<span class="string">&quot;stock&quot;</span>, <span class="number">0</span>) <span class="comment">//乐观锁   where id = ? and stock &gt; 0</span></span><br><span class="line">                .update();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(!success) &#123;</span><br><span class="line">            <span class="comment">// 扣减失败</span></span><br><span class="line">            log.error(<span class="string">&quot;库存不足&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//7.创建订单</span></span><br><span class="line">        <span class="comment">//新增订单</span></span><br><span class="line">        save(voucherOrder);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//秒杀业务</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Result <span class="title function_">seckillVoucher</span><span class="params">(Long voucherId)</span> &#123;</span><br><span class="line">        <span class="comment">//获取用户</span></span><br><span class="line">        <span class="type">Long</span> <span class="variable">userId</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">        <span class="comment">//1.执行lua脚本</span></span><br><span class="line">        <span class="type">Long</span> <span class="variable">result</span> <span class="operator">=</span> stringRedisTemplate.execute(</span><br><span class="line">                SECKILL_SCRIPT,</span><br><span class="line">                Collections.emptyList(),</span><br><span class="line">                voucherId.toString(), userId.toString()</span><br><span class="line">        );</span><br><span class="line">        <span class="comment">//2.判断结果是否为0</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">r</span> <span class="operator">=</span> result.intValue();</span><br><span class="line">        <span class="keyword">if</span>(r != <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">//2.1， 不为0， 没有购买资格</span></span><br><span class="line">            <span class="keyword">return</span> Result.fail(r == <span class="number">1</span> ? <span class="string">&quot;库存不足&quot;</span> : <span class="string">&quot;不能重复下单&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//2.2 为0， 可以购买, 把下单信息保存在阻塞队列</span></span><br><span class="line">        <span class="comment">//2.3创建订单</span></span><br><span class="line">        <span class="type">VoucherOrder</span> <span class="variable">voucherOrder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">VoucherOrder</span>();</span><br><span class="line">        <span class="comment">//2.4订单id</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">orderId</span> <span class="operator">=</span> redisIdWorker.nextId(<span class="string">&quot;order&quot;</span>);</span><br><span class="line">        voucherOrder.setId(orderId);</span><br><span class="line">        <span class="comment">//2.5用户id</span></span><br><span class="line">        voucherOrder.setUserId(userId);</span><br><span class="line">        <span class="comment">//2.6代金券id</span></span><br><span class="line">        voucherOrder.setVoucherId(voucherId);</span><br><span class="line">        <span class="comment">//放入阻塞队列</span></span><br><span class="line">        orderTasks.add(voucherOrder);</span><br><span class="line">        <span class="comment">//获取代理对象</span></span><br><span class="line">        proxy = (IVoucherOrderService) AopContext.currentProxy();</span><br><span class="line">        <span class="comment">//3.返回订单id</span></span><br><span class="line">        <span class="keyword">return</span> Result.ok(orderId);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
 </ul>
-<h3 id="3-优化总结"><a href="#3-优化总结" class="headerlink" title="3.优化总结"></a>3.优化总结</h3><p><img  
+<h3 id="优化总结"><a href="#优化总结" class="headerlink" title="优化总结"></a>优化总结</h3><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ms_13.png"
@@ -248,7 +248,7 @@
 <li>内存限制：阻塞队列用的是JVM内存，在高并发情况下，可能会导致JVM内存溢出或者受内存限制导致存不进去订单</li>
 <li>数据安全：JVM内存不能持久化数据，当服务器宕机会导致数据丢失</li>
 </ul>
-<h2 id="六-Redis消息队列实现秒杀"><a href="#六-Redis消息队列实现秒杀" class="headerlink" title="六.Redis消息队列实现秒杀"></a>六.Redis消息队列实现秒杀</h2><p><img  
+<h2 id="Redis消息队列实现秒杀"><a href="#Redis消息队列实现秒杀" class="headerlink" title="Redis消息队列实现秒杀"></a>Redis消息队列实现秒杀</h2><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ms_14.png"
@@ -332,13 +332,13 @@
                       alt="compare"
                 ></li>
 </ul>
-<h3 id="基于Stream实现异步下单"><a href="#基于Stream实现异步下单" class="headerlink" title="基于Stream实现异步下单"></a>基于Stream实现异步下单</h3><h4 id="需求分析"><a href="#需求分析" class="headerlink" title="需求分析"></a>需求分析</h4><p><img  
+<h3 id="基于Stream实现异步下单"><a href="#基于Stream实现异步下单" class="headerlink" title="基于Stream实现异步下单"></a>基于Stream实现异步下单</h3><h4 id="需求分析-1"><a href="#需求分析-1" class="headerlink" title="需求分析"></a>需求分析</h4><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ms_22.png"
                       alt="need"
                 ></p>
-<h4 id="代码编写"><a href="#代码编写" class="headerlink" title="代码编写"></a>代码编写</h4><p><em>1. 创建消息队列</em></p>
+<h4 id="代码编写-1"><a href="#代码编写-1" class="headerlink" title="代码编写"></a>代码编写</h4><p><em>1. 创建消息队列</em></p>
 <div class="highlight-container" data-rel="Shell"><figure class="iseeu highlight shell"><table><tr><td class="code"><pre><span class="line">XGROUP CREATE STREAM stream.orders g1 0 MKSTREAM</span><br></pre></td></tr></table></figure></div>
 
 <p><em>2. 修改lua脚本</em></p>
@@ -359,30 +359,30 @@
   <entry>
     <title>Docker Quickstart</title>
     <url>/2024/03/01/Docker-Quickstart/</url>
-    <content><![CDATA[<h2 id="一-卸载旧版"><a href="#一-卸载旧版" class="headerlink" title="一.卸载旧版"></a>一.卸载旧版</h2><p>首先如果系统中已经存在旧的Docker，则先卸载：</p>
+    <content><![CDATA[<h2 id="卸载旧版"><a href="#卸载旧版" class="headerlink" title="卸载旧版"></a>卸载旧版</h2><p>首先如果系统中已经存在旧的Docker，则先卸载：</p>
 <div class="highlight-container" data-rel="Bash"><figure class="iseeu highlight bash"><table><tr><td class="code"><pre><span class="line">yum remove docker \</span><br><span class="line">    docker-client \</span><br><span class="line">    docker-client-latest \</span><br><span class="line">    docker-common \</span><br><span class="line">    docker-latest \</span><br><span class="line">    docker-latest-logrotate \</span><br><span class="line">    docker-logrotate \</span><br><span class="line">    docker-engine</span><br></pre></td></tr></table></figure></div>
-<h2 id="二-配置Docker的yum库"><a href="#二-配置Docker的yum库" class="headerlink" title="二.配置Docker的yum库"></a>二.配置Docker的yum库</h2><p>首先要安装一个yum工具</p>
+<h2 id="配置Docker的yum库"><a href="#配置Docker的yum库" class="headerlink" title="配置Docker的yum库"></a>配置Docker的yum库</h2><p>首先要安装一个yum工具</p>
 <div class="highlight-container" data-rel="Bash"><figure class="iseeu highlight bash"><table><tr><td class="code"><pre><span class="line">yum install -y yum-utils</span><br></pre></td></tr></table></figure></div>
 <p>安装成功后，执行命令，配置Docker的yum源</p>
 <div class="highlight-container" data-rel="Bash"><figure class="iseeu highlight bash"><table><tr><td class="code"><pre><span class="line">yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo</span><br></pre></td></tr></table></figure></div>
-<h2 id="三-安装Docker"><a href="#三-安装Docker" class="headerlink" title="三.安装Docker"></a>三.安装Docker</h2><p>最后，执行命令，安装Docker</p>
+<h2 id="安装Docker"><a href="#安装Docker" class="headerlink" title="安装Docker"></a>安装Docker</h2><p>最后，执行命令，安装Docker</p>
 <div class="highlight-container" data-rel="Bash"><figure class="iseeu highlight bash"><table><tr><td class="code"><pre><span class="line">yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin</span><br></pre></td></tr></table></figure></div>
 
-<h2 id="四-启动和校验"><a href="#四-启动和校验" class="headerlink" title="四.启动和校验"></a>四.启动和校验</h2><div class="highlight-container" data-rel="Bash"><figure class="iseeu highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 启动Docker</span></span><br><span class="line">systemctl start docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 停止Docker</span></span><br><span class="line">systemctl stop docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重启</span></span><br><span class="line">systemctl restart docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置开机自启</span></span><br><span class="line">systemctl <span class="built_in">enable</span> docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行docker ps命令，如果不报错，说明安装启动成功</span></span><br><span class="line">docker ps</span><br></pre></td></tr></table></figure></div>
+<h2 id="启动和校验"><a href="#启动和校验" class="headerlink" title="启动和校验"></a>启动和校验</h2><div class="highlight-container" data-rel="Bash"><figure class="iseeu highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 启动Docker</span></span><br><span class="line">systemctl start docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 停止Docker</span></span><br><span class="line">systemctl stop docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重启</span></span><br><span class="line">systemctl restart docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置开机自启</span></span><br><span class="line">systemctl <span class="built_in">enable</span> docker</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行docker ps命令，如果不报错，说明安装启动成功</span></span><br><span class="line">docker ps</span><br></pre></td></tr></table></figure></div>
 
-<h2 id="五-配置阿里云镜像加速"><a href="#五-配置阿里云镜像加速" class="headerlink" title="五.配置阿里云镜像加速"></a>五.配置阿里云镜像加速</h2><h4 id="1-在首页的产品中，找到阿里云的容器镜像服务："><a href="#1-在首页的产品中，找到阿里云的容器镜像服务：" class="headerlink" title="1.在首页的产品中，找到阿里云的容器镜像服务："></a>1.在首页的产品中，找到阿里云的容器镜像服务：</h4><p><img  
+<h2 id="配置阿里云镜像加速"><a href="#配置阿里云镜像加速" class="headerlink" title="配置阿里云镜像加速"></a>配置阿里云镜像加速</h2><h4 id="在首页的产品中，找到阿里云的容器镜像服务："><a href="#在首页的产品中，找到阿里云的容器镜像服务：" class="headerlink" title="在首页的产品中，找到阿里云的容器镜像服务："></a>在首页的产品中，找到阿里云的容器镜像服务：</h4><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/doc_01.png"
                       alt="Ali_01"
                 ></p>
-<h4 id="2-点击后进入控制台："><a href="#2-点击后进入控制台：" class="headerlink" title="2.点击后进入控制台："></a>2.点击后进入控制台：</h4><p><img  
+<h4 id="点击后进入控制台："><a href="#点击后进入控制台：" class="headerlink" title="点击后进入控制台："></a>点击后进入控制台：</h4><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/doc_02.png"
                       alt="Ali_02"
                 ></p>
-<h4 id="3-配置镜像加速"><a href="#3-配置镜像加速" class="headerlink" title="3.配置镜像加速"></a>3.配置镜像加速</h4><p>找到镜像加速器<br><img  
+<h4 id="配置镜像加速"><a href="#配置镜像加速" class="headerlink" title="配置镜像加速"></a>配置镜像加速</h4><p>找到镜像加速器<br><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/doc_03.png"
@@ -508,7 +508,7 @@
 <h2 id="源码跟踪"><a href="#源码跟踪" class="headerlink" title="源码跟踪"></a>源码跟踪</h2><p>为什么我们只输入了service名称就可以访问了呢？之前还要获取ip和端口。</p>
 <p>显然有人帮我们根据service名称，获取到了服务实例的ip和端口。它就是<code>LoadBalancerInterceptor</code>，这个类会在对RestTemplate的请求进行拦截，然后从Eureka根据服务id获取服务列表，随后利用负载均衡算法得到真实的服务地址信息，替换服务id。</p>
 <p>我们进行源码跟踪：</p>
-<h3 id="1）LoadBalancerIntercepor"><a href="#1）LoadBalancerIntercepor" class="headerlink" title="1）LoadBalancerIntercepor"></a>1）LoadBalancerIntercepor</h3><p><img  
+<h3 id="LoadBalancerIntercepor"><a href="#LoadBalancerIntercepor" class="headerlink" title="LoadBalancerIntercepor"></a>LoadBalancerIntercepor</h3><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ribbon_02.png"
@@ -519,7 +519,7 @@
 <li><code>originalUri.getHost()</code>：获取uri路径的主机名，其实就是服务id，<code>user-service</code></li>
 <li><code>this.loadBalancer.execute()</code>：处理服务id，和用户请求。<br>这里的<code>this.loadBalancer</code>是<code>LoadBalancerClient</code>类型，我们继续跟入。</li>
 </ul>
-<h3 id="2）LoadBalancerClient"><a href="#2）LoadBalancerClient" class="headerlink" title="2）LoadBalancerClient"></a>2）LoadBalancerClient</h3><p>继续跟入execute方法：<br><img  
+<h3 id="LoadBalancerClient"><a href="#LoadBalancerClient" class="headerlink" title="LoadBalancerClient"></a>LoadBalancerClient</h3><p>继续跟入execute方法：<br><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ribbon_03.png"
@@ -534,7 +534,7 @@
                       alt="负载均衡"
                 ></li>
 </ul>
-<h3 id="3）负载均衡策略IRule"><a href="#3）负载均衡策略IRule" class="headerlink" title="3）负载均衡策略IRule"></a>3）负载均衡策略IRule</h3><p>在刚才的代码中，可以看到获取服务使通过一个<code>getServer</code>方法来做负载均衡:<br><img  
+<h3 id="负载均衡策略IRule"><a href="#负载均衡策略IRule" class="headerlink" title="负载均衡策略IRule"></a>负载均衡策略IRule</h3><p>在刚才的代码中，可以看到获取服务使通过一个<code>getServer</code>方法来做负载均衡:<br><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ribbon_04.png"
@@ -555,7 +555,7 @@
                      data-src="/assets/imgs/ribbon_07.png"
                       alt="DefaultRule"
                 ><br>这里的rule默认值是一个<code>RoundRobinRule</code>，也就是轮询</p>
-<h3 id="4）总结"><a href="#4）总结" class="headerlink" title="4）总结"></a>4）总结</h3><p><img  
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><img  
                      lazyload
                      src="/images/loading.svg"
                      data-src="/assets/imgs/ribbon_08.png"
@@ -612,13 +612,13 @@
 <td>重试机制的选择逻辑</td>
 </tr>
 </tbody></table>
-<h3 id="4-3-2-自定义负载均衡策略"><a href="#4-3-2-自定义负载均衡策略" class="headerlink" title="4.3.2.自定义负载均衡策略"></a>4.3.2.自定义负载均衡策略</h3><p>通过定义IRule实现可以修改负载均衡规则，有两种方式：</p>
+<h3 id="自定义负载均衡策略"><a href="#自定义负载均衡策略" class="headerlink" title="自定义负载均衡策略"></a>自定义负载均衡策略</h3><p>通过定义IRule实现可以修改负载均衡规则，有两种方式：</p>
 <ol>
 <li>代码方式：在order-service中的OrderApplication类中，定义一个新的IRule：<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> IRule <span class="title function_">randomRule</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RandomRule</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
 <li>配置文件方式：在order-service的application.yml文件中，添加新的配置也可以修改规则：<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span> <span class="comment"># 给某个微服务配置负载均衡规则，这里是userservice服务</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.netflix.loadbalancer.RandomRule</span> <span class="comment"># 负载均衡规则 </span></span><br></pre></td></tr></table></figure></div>
 <strong>注意</strong>，一般用默认的负载均衡规则，不做修改。</li>
 </ol>
-<h2 id="4-4-饥饿加载"><a href="#4-4-饥饿加载" class="headerlink" title="4.4.饥饿加载"></a>4.4.饥饿加载</h2><p>Ribbon默认是采用懒加载，即第一次访问时才会去创建LoadBalanceClient，请求时间会很长。</p>
+<h2 id="饥饿加载"><a href="#饥饿加载" class="headerlink" title="饥饿加载"></a>饥饿加载</h2><p>Ribbon默认是采用懒加载，即第一次访问时才会去创建LoadBalanceClient，请求时间会很长。</p>
 <p>而饥饿加载则会在项目启动时创建，降低第一次访问的耗时，通过下面配置开启饥饿加载：</p>
 <div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">ribbon:</span></span><br><span class="line">  <span class="attr">eager-load:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">clients:</span> <span class="string">userservice</span></span><br></pre></td></tr></table></figure></div>
 
@@ -646,6 +646,559 @@
       <tags>
         <tag>Spring Cloud</tag>
         <tag>Ribbon</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Cloud-Nacos篇(注册中心)</title>
+    <url>/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <content><![CDATA[<h2 id="认识Nacos"><a href="#认识Nacos" class="headerlink" title="认识Nacos"></a>认识Nacos</h2><p><a class="link"   href="https://nacos.io/" >Nacos <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>是阿里巴巴的产品，现在是<a class="link"   href="https://spring.io/projects/spring-cloud" >SpringCloud <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中的一个组件。相比<a class="link"   href="https://github.com/Netflix/eureka" >Eureka <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>功能更加丰富，在国内受欢迎程度较高。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_01.png"
+                      alt="nacos"
+                ></p>
+<h2 id="服务注册到nacos"><a href="#服务注册到nacos" class="headerlink" title="服务注册到nacos"></a>服务注册到nacos</h2><p>Nacos是SpringCloudAlibaba的组件，而SpringCloudAlibaba也遵循SpringCloud中定义的服务注册、服务发现规范。因此使用Nacos和使用Eureka对于微服务来说，并没有太大区别。</p>
+<h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>在cloud-demo父工程的pom文件中的<code>&lt;dependencyManagement&gt;</code>中引入SpringCloudAlibaba的依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-alibaba-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.2.6.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<p>然后在user-service和order-service中的pom文件中引入nacos-discovery依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-discovery<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<h3 id="配置nacos地址"><a href="#配置nacos地址" class="headerlink" title="配置nacos地址"></a>配置nacos地址</h3><p>在user-service和order-service的application.yml中添加nacos地址：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br></pre></td></tr></table></figure></div>
+<h3 id="重启"><a href="#重启" class="headerlink" title="重启"></a>重启</h3><p>重启微服务后，登录nacos管理页面，可以看到微服务信息：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_02.png"
+                      alt="nacos"
+                ></p>
+<h2 id="服务分级存储模型"><a href="#服务分级存储模型" class="headerlink" title="服务分级存储模型"></a>服务分级存储模型</h2><p>一个服务可以包含多个集群，如杭州、上海，每个集群下可以有多个实例，形成分级模型，如图：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_03.png"
+                      alt="cluster"
+                ><br>微服务互相访问时，应该尽可能访问同集群实例，因为本地访问速度更快。当本集群内不可用时，才访问其它集群。</p>
+<h3 id="给user-service配置集群"><a href="#给user-service配置集群" class="headerlink" title="给user-service配置集群"></a>给user-service配置集群</h3><div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
+<h3 id="同集群优先的负载均衡"><a href="#同集群优先的负载均衡" class="headerlink" title="同集群优先的负载均衡"></a>同集群优先的负载均衡</h3><p>默认的<code>ZoneAvoidanceRule</code>并不能实现根据同集群优先来实现负载均衡。</p>
+<p>因此Nacos中提供了一个<code>NacosRule</code>的实现，可以优先从同集群中挑选实例。<br>1）给order-service配置集群信息<br>修改order-service的application.yml文件，添加集群配置：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
+<p>2）修改负载均衡规则<br>修改order-service的application.yml文件，修改负载均衡规则：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.alibaba.cloud.nacos.ribbon.NacosRule</span> <span class="comment"># 负载均衡规则 </span></span><br></pre></td></tr></table></figure></div>
+<h2 id="权重配置"><a href="#权重配置" class="headerlink" title="权重配置"></a>权重配置</h2><p>实际部署中会出现这样的场景：</p>
+<p>服务器设备性能有差异，部分实例所在机器性能较好，另一些较差，我们希望性能好的机器承担更多的用户请求。<br>在nacos控制台，找到user-service的实例列表，点击编辑，即可修改权重：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_04.png"
+                      alt="loadBalance"
+                ></p>
+<h2 id="环境隔离"><a href="#环境隔离" class="headerlink" title="环境隔离"></a>环境隔离</h2><p>Nacos提供了namespace来实现环境隔离功能。</p>
+<ul>
+<li>nacos中可以有多个namespace</li>
+<li>namespace下可以有group、service等</li>
+<li>不同namespace之间相互隔离，例如不同namespace的服务互相不可见<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_05.png"
+                      alt="namespace"
+                ></li>
+</ul>
+<h3 id="创建namespace"><a href="#创建namespace" class="headerlink" title="创建namespace"></a>创建namespace</h3><p>默认情况下，所有service、data、group都在同一个namespace，名为public：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_06.png"
+                      alt="namespace"
+                ><br>我们可以点击页面新增按钮，添加一个namespace：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_07.png"
+                      alt="namespace"
+                ><br>然后，填写表单：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_08.png"
+                      alt="namespace"
+                ><br>就能在页面看到一个新的namespace：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_09.png"
+                      alt="namespace"
+                ></p>
+<h3 id="给微服务配置namespace"><a href="#给微服务配置namespace" class="headerlink" title="给微服务配置namespace"></a>给微服务配置namespace</h3><p>给微服务配置namespace只能通过修改配置来实现。</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span></span><br><span class="line">        <span class="attr">namespace:</span> <span class="string">492a7d5d-237b-46a1-a99a-fa8e98e4b0f9</span> <span class="comment"># 命名空间，填ID</span></span><br></pre></td></tr></table></figure></div>
+<h2 id="Nacos与Eureka的区别"><a href="#Nacos与Eureka的区别" class="headerlink" title="Nacos与Eureka的区别"></a>Nacos与Eureka的区别</h2><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_10.png"
+                      alt="namespace"
+                ></p>
+<ul>
+<li><p>Nacos与eureka的共同点</p>
+<ul>
+<li>都支持服务注册和服务拉取</li>
+<li>都支持服务提供者心跳方式做健康检测</li>
+</ul>
+</li>
+<li><p>Nacos与Eureka的区别</p>
+<ul>
+<li>Nacos支持服务端主动检测提供者状态：临时实例采用心跳模式，非临时实例采用主动检测模式</li>
+<li>临时实例心跳不正常会被剔除，非临时实例则不会被剔除</li>
+<li>Nacos支持服务列表变更的消息推送模式，服务列表更新更及时</li>
+<li>Nacos集群默认采用AP方式，当集群中存在非临时实例时，采用CP模式；Eureka采用AP方式</li>
+</ul>
+</li>
+</ul>
+<h2 id="Nacos配置管理"><a href="#Nacos配置管理" class="headerlink" title="Nacos配置管理"></a>Nacos配置管理</h2><h3 id="统一配置管理"><a href="#统一配置管理" class="headerlink" title="统一配置管理"></a>统一配置管理</h3><p>当微服务部署的实例越来越多，达到数十、数百时，逐个修改微服务配置就会让人抓狂，而且很容易出错。我们需要一种统一配置管理方案，可以集中管理所有实例的配置。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_11.png"
+                      alt="config"
+                ></p>
+<h4 id="在nacos中添加配置文件"><a href="#在nacos中添加配置文件" class="headerlink" title="在nacos中添加配置文件"></a>在nacos中添加配置文件</h4><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_12.png"
+                      alt="config"
+                ><br>然后在弹出的表单中，填写配置信息：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_13.png"
+                      alt="config"
+                ><br><em>注意：项目的核心配置，需要热更新的配置才有放到nacos管理的必要。基本不会变更的一些配置还是保存在微服务本地比较好。</em></p>
+<h4 id="从微服务拉取配置"><a href="#从微服务拉取配置" class="headerlink" title="从微服务拉取配置"></a>从微服务拉取配置</h4><p>微服务要拉取nacos中管理的配置，并且与本地的application.yml配置合并，才能完成项目启动。</p>
+<p>但如果尚未读取application.yml，又如何得知nacos地址呢？</p>
+<p>因此spring引入了一种新的配置文件：bootstrap.yaml文件，会在application.yml之前被读取，流程如下：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_14.png"
+                      alt="config"
+                ><br>1）引入nacos-config依赖</p>
+<p>首先，在user-service服务中，引入nacos-config的客户端依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--nacos配置管理依赖--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<p>2）添加bootstrap.yaml</p>
+<p>然后，在user-service中添加一个bootstrap.yaml文件，内容如下：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">userservice</span> <span class="comment"># 服务名称</span></span><br><span class="line">  <span class="attr">profiles:</span></span><br><span class="line">    <span class="attr">active:</span> <span class="string">dev</span> <span class="comment">#开发环境，这里是dev </span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span> <span class="comment"># Nacos地址</span></span><br><span class="line">      <span class="attr">config:</span></span><br><span class="line">        <span class="attr">file-extension:</span> <span class="string">yaml</span> <span class="comment"># 文件后缀名</span></span><br></pre></td></tr></table></figure></div>
+<p>本例中，就是去读取<code>userservice-dev.yaml</code>：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_15.png"
+                      alt="config"
+                ><br>3）读取nacos配置</p>
+<p>在user-service中的UserController中添加业务逻辑，读取pattern.dateformat配置：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_16.png"
+                      alt="config"
+                ><br>在页面访问，可以看到效果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_17.png"
+                      alt="config"
+                ></p>
+<h3 id="配置热更新"><a href="#配置热更新" class="headerlink" title="配置热更新"></a>配置热更新</h3><p>我们最终的目的，是修改nacos中的配置后，微服务中无需重启即可让配置生效，也就是<strong>配置热更新</strong>。</p>
+<p>要实现配置热更新，可以使用两种方式：</p>
+<h4 id="方式一"><a href="#方式一" class="headerlink" title="方式一"></a>方式一</h4><p>在@Value注入的变量所在类上添加注解@RefreshScope：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_18.png"
+                      alt="hotUpdate"
+                ></p>
+<h4 id="方式二"><a href="#方式二" class="headerlink" title="方式二"></a>方式二</h4><p>使用@ConfigurationProperties注解代替@Value注解。</p>
+<p>在user-service服务中，添加一个类，读取patterrn.dateformat属性：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> cn.itcast.user.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.context.properties.ConfigurationProperties;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@ConfigurationProperties(prefix = &quot;pattern&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatternProperties</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String dateformat;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>在UserController中使用这个类代替@Value：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_19.png"
+                      alt="hotUpdate"
+                ></p>
+<h3 id="配置共享"><a href="#配置共享" class="headerlink" title="配置共享"></a>配置共享</h3><p>其实微服务启动时，会去nacos读取多个配置文件，例如：</p>
+<ul>
+<li><p><code>[spring.application.name]-[spring.profiles.active].yaml</code>，例如：userservice-dev.yaml</p>
+</li>
+<li><p><code>[spring.application.name].yaml</code>，例如：userservice.yaml</p>
+</li>
+</ul>
+<p>而<code>[spring.application.name].yaml</code>不包含环境，因此可以被多个环境共享。</p>
+<h4 id="添加一个环境共享配置"><a href="#添加一个环境共享配置" class="headerlink" title="添加一个环境共享配置"></a>添加一个环境共享配置</h4><p>我们在nacos中添加一个userservice.yaml文件：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_20.png"
+                      alt="sharedEnv"
+                ></p>
+<h4 id="在user-service中读取共享配置"><a href="#在user-service中读取共享配置" class="headerlink" title="在user-service中读取共享配置"></a>在user-service中读取共享配置</h4><p>在user-service服务中，修改PatternProperties类，读取新添加的属性：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_21.png"
+                      alt="sharedEnv"
+                ><br>在user-service服务中，修改UserController，添加一个方法：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_22.png"
+                      alt="sharedEnv"
+                ></p>
+<h4 id="运行两个UserApplication，使用不同的profile"><a href="#运行两个UserApplication，使用不同的profile" class="headerlink" title="运行两个UserApplication，使用不同的profile"></a>运行两个UserApplication，使用不同的profile</h4><p>修改UserApplication2这个启动项，改变其profile值：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_23.png"
+                      alt="JVMENV"
+                ><br>这样，UserApplication(8081)使用的profile是dev，UserApplication2(8082)使用的profile是test。</p>
+<p>启动UserApplication和UserApplication2<br>访问<a class="link"   href="http://localhost:8081/user/prop" >http://localhost:8081/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_24.png"
+                      alt="JVMENV"
+                ><br>访问<a class="link"   href="http://localhost:8082/user/prop" >http://localhost:8082/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_25.png"
+                      alt="JVMENV"
+                ><br>可以看出来，不管是dev，还是test环境，都读取到了envSharedValue这个属性的值。</p>
+<h4 id="配置共享的优先级"><a href="#配置共享的优先级" class="headerlink" title="配置共享的优先级"></a>配置共享的优先级</h4><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_26.png"
+                      alt="JVMENV"
+                ></p>
+]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
+      <tags>
+        <tag>Spring Cloud</tag>
+        <tag>Nacos</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Cloud-Feign篇(远程调用)</title>
+    <url>/2024/03/13/Spring-Cloud-Feign%E7%AF%87-%E8%BF%9C%E7%A8%8B%E8%B0%83%E7%94%A8/</url>
+    <content><![CDATA[<h2 id="认识Feign"><a href="#认识Feign" class="headerlink" title="认识Feign"></a>认识Feign</h2><p>Feign是一个声明式的http客户端，官方地址：<a class="link"   href="https://github.com/OpenFeign/feign" >https://github.com/OpenFeign/feign <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，其作用就是帮助我们优雅的实现http请求的发送</p>
+<h2 id="Feign替代RestTemplate"><a href="#Feign替代RestTemplate" class="headerlink" title="Feign替代RestTemplate"></a>Feign替代RestTemplate</h2><p>Fegin的使用步骤如下</p>
+<h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>我们在order-service服务的pom文件中引入feign的依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-openfeign<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<h3 id="添加注解"><a href="#添加注解" class="headerlink" title="添加注解"></a>添加注解</h3><p>在order-service的启动类添加注解开启Feign的功能：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_01.png"
+                      alt="feign"
+                ></p>
+<h3 id="编写Feign的客户端"><a href="#编写Feign的客户端" class="headerlink" title="编写Feign的客户端"></a>编写Feign的客户端</h3><p>在order-service中新建一个接口，内容如下：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> cn.itcast.order.client;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> cn.itcast.order.pojo.User;</span><br><span class="line"><span class="keyword">import</span> org.springframework.cloud.openfeign.FeignClient;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.GetMapping;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.bind.annotation.PathVariable;</span><br><span class="line"></span><br><span class="line"><span class="meta">@FeignClient(&quot;userservice&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">UserClient</span> &#123;</span><br><span class="line">    <span class="meta">@GetMapping(&quot;/user/&#123;id&#125;&quot;)</span></span><br><span class="line">    User <span class="title function_">findById</span><span class="params">(<span class="meta">@PathVariable(&quot;id&quot;)</span> Long id)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>这个客户端主要是基于SpringMVC的注解来声明远程调用的信息，比如：</p>
+<ul>
+<li>服务名称：userservice</li>
+<li>请求方式：GET</li>
+<li>请求路径：&#x2F;user&#x2F;{id}</li>
+<li>请求参数：Long id</li>
+<li>返回值类型：User</li>
+</ul>
+<p>这样，Feign就可以帮助我们发送http请求，无需自己使用RestTemplate来发送了。</p>
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p>修改order-service中的OrderService类中的queryOrderById方法，使用Feign客户端代替RestTemplate：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_02.png"
+                      alt="testFeign"
+                ></p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>使用Feign的步骤：</p>
+<p>① 引入依赖:spring-cloud-starter-openfeign<br>② 添加@EnableFeignClients注解<br>③ 编写FeignClient接口<br>④ 使用FeignClient中定义的方法代替RestTemplate</p>
+<h2 id="自定义配置"><a href="#自定义配置" class="headerlink" title="自定义配置"></a>自定义配置</h2><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>作用</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>feign.Logger.Level</strong></td>
+<td>修改日志级别</td>
+<td>包含四种不同的级别：NONE、BASIC、HEADERS、FULL</td>
+</tr>
+<tr>
+<td>feign.codec.Decoder</td>
+<td>响应结果的解析器</td>
+<td>http远程调用的结果做解析，例如解析json字符串为java对象</td>
+</tr>
+<tr>
+<td>feign.codec.Encoder</td>
+<td>请求参数编码</td>
+<td>将请求参数编码，便于通过http请求发送</td>
+</tr>
+<tr>
+<td>feign.Contract</td>
+<td>支持的注解格式</td>
+<td>默认是SpringMVC的注解</td>
+</tr>
+<tr>
+<td>feign.Retryer</td>
+<td>失败重试机制</td>
+<td>请求失败的重试机制，默认是没有，不过会使用Ribbon的重试</td>
+</tr>
+</tbody></table>
+<p>一般情况下，默认值就能满足我们使用，如果要自定义时，只需要创建自定义的@Bean覆盖默认Bean即可。</p>
+<p>下面以日志为例来演示如何自定义配置。</p>
+<h3 id="配置文件方式"><a href="#配置文件方式" class="headerlink" title="配置文件方式"></a>配置文件方式</h3><p>基于配置文件修改feign的日志级别可以针对单个服务, 也可以针对所有服务</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">feign:</span>  </span><br><span class="line">  <span class="attr">client:</span></span><br><span class="line">    <span class="attr">config:</span> </span><br><span class="line">      <span class="attr">default:</span> <span class="comment"># 这里用default就是全局配置，如果是写服务名称，则是针对某个微服务的配置</span></span><br><span class="line">        <span class="attr">loggerLevel:</span> <span class="string">FULL</span> <span class="comment">#  日志级别 </span></span><br></pre></td></tr></table></figure></div>
+<p>而日志的级别分为四种：</p>
+<ul>
+<li>NONE：不记录任何日志信息，这是默认值。</li>
+<li>BASIC：仅记录请求的方法，URL以及响应状态码和执行时间</li>
+<li>HEADERS：在BASIC的基础上，额外记录了请求和响应的头信息</li>
+<li>FULL：记录所有请求和响应的明细，包括头信息、请求体、元数据。</li>
+</ul>
+<h3 id="Java代码方式"><a href="#Java代码方式" class="headerlink" title="Java代码方式"></a>Java代码方式</h3><p>也可以基于Java代码来修改日志级别，先声明一个类，然后声明一个Logger.Level的对象：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DefaultFeignConfiguration</span>  &#123;</span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> Logger.Level <span class="title function_">feignLogLevel</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Logger.Level.BASIC; <span class="comment">// 日志级别为BASIC</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>如果要<strong>全局生效</strong>，将其放到启动类的@EnableFeignClients这个注解中：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@EnableFeignClients(defaultConfiguration = DefaultFeignConfiguration.class)</span> </span><br></pre></td></tr></table></figure></div>
+
+<p>如果是<strong>局部生效</strong>，则把它放到对应的@FeignClient这个注解中：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@FeignClient(value = &quot;userservice&quot;, configuration = DefaultFeignConfiguration .class)</span> </span><br></pre></td></tr></table></figure></div>
+<h2 id="Feign使用优化"><a href="#Feign使用优化" class="headerlink" title="Feign使用优化"></a>Feign使用优化</h2><p>Feign底层发起http请求，依赖于其它的框架。其底层客户端实现包括：</p>
+<p>•URLConnection：默认实现，不支持连接池</p>
+<p>•Apache HttpClient ：支持连接池</p>
+<p>•OKHttp：支持连接池<br>因此提高Feign的性能主要手段就是使用<strong>连接池</strong>代替默认的URLConnection。</p>
+<p>这里我们用Apache的HttpClient来演示。</p>
+<ol>
+<li>引入依赖<br>在order-service的pom文件中引入Apache的HttpClient依赖：<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--httpClient的依赖 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>io.github.openfeign<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>feign-httpclient<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div></li>
+<li>配置连接池<br>在order-service的application.yml中添加配置：<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">feign:</span></span><br><span class="line">  <span class="attr">client:</span></span><br><span class="line">    <span class="attr">config:</span></span><br><span class="line">      <span class="attr">default:</span> <span class="comment"># default全局的配置</span></span><br><span class="line">        <span class="attr">loggerLevel:</span> <span class="string">BASIC</span> <span class="comment"># 日志级别，BASIC就是基本的请求和响应信息</span></span><br><span class="line">  <span class="attr">httpclient:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span> <span class="comment"># 开启feign对HttpClient的支持</span></span><br><span class="line">    <span class="attr">max-connections:</span> <span class="number">200</span> <span class="comment"># 最大的连接数</span></span><br><span class="line">    <span class="attr">max-connections-per-route:</span> <span class="number">50</span> <span class="comment"># 每个路径的最大连接数</span></span><br></pre></td></tr></table></figure></div>
+总结，Feign的优化：</li>
+</ol>
+<p>1.日志级别尽量用basic</p>
+<p>2.使用HttpClient或OKHttp代替URLConnection</p>
+<p>①  引入feign-httpClient依赖</p>
+<p>②  配置文件开启httpClient功能，设置连接池参数</p>
+<h2 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h2><p>所谓最近实践，就是使用过程中总结的经验，最好的一种使用方式。</p>
+<p>自习观察可以发现，Feign的客户端与服务提供者的controller代码非常相似：</p>
+<p>feign客户端：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_03.png"
+                      alt="testFeign"
+                ><br>UserController：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_04.png"
+                      alt="testFeign"
+                ><br>有没有一种办法简化这种重复的代码编写呢？</p>
+<h3 id="继承方式"><a href="#继承方式" class="headerlink" title="继承方式"></a>继承方式</h3><p>一样的代码可以通过继承来共享：</p>
+<p>1）定义一个API接口，利用定义方法，并基于SpringMVC注解做声明。</p>
+<p>2）Feign客户端和Controller都集成改接口<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_05.png"
+                      alt="extends"
+                ><br>优点：</p>
+<ul>
+<li>简单</li>
+<li>实现了代码共享</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li><p>服务提供方、服务消费方紧耦合</p>
+</li>
+<li><p>参数列表中的注解映射并不会继承，因此Controller中必须再次声明方法、参数列表、注解</p>
+</li>
+</ul>
+<h3 id="抽取方式"><a href="#抽取方式" class="headerlink" title="抽取方式"></a>抽取方式</h3><p>将Feign的Client抽取为独立模块，并且把接口有关的POJO、默认的Feign配置都放到这个模块中，提供给所有消费者使用。</p>
+<p>例如，将UserClient、User、Feign的默认配置都抽取到一个feign-api包中，所有微服务引用该依赖包，即可直接使用。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_06.png"
+                      alt="extends"
+                ></p>
+<h3 id="实现基于抽取的最佳实践"><a href="#实现基于抽取的最佳实践" class="headerlink" title="实现基于抽取的最佳实践"></a>实现基于抽取的最佳实践</h3><h4 id="抽取"><a href="#抽取" class="headerlink" title="抽取"></a>抽取</h4><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_07.png"
+                      alt="extends"
+                ><br>在feign-api中然后引入feign的starter依赖</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-openfeign<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<p>然后，order-service中编写的UserClient、User、DefaultFeignConfiguration都复制到feign-api项目中<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_08.png"
+                      alt="extends"
+                ></p>
+<h4 id="在order-service中使用feign-api"><a href="#在order-service中使用feign-api" class="headerlink" title="在order-service中使用feign-api"></a>在order-service中使用feign-api</h4><p>首先，删除order-service中的UserClient、User、DefaultFeignConfiguration等类或接口。</p>
+<p>在order-service的pom文件中中引入feign-api的依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.example<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>feign-api<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<h4 id="重启测试"><a href="#重启测试" class="headerlink" title="重启测试"></a>重启测试</h4><p>重启后，发现服务报错了<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/feign_08.png"
+                      alt="extends"
+                ><br>这是因为UserClient现在在org.example.feign.clients包下，</p>
+<p>而order-service的@EnableFeignClients注解是在org.example.order包下，不在同一个包，无法扫描到UserClient。</p>
+<h4 id="解决扫描包问题"><a href="#解决扫描包问题" class="headerlink" title="解决扫描包问题"></a>解决扫描包问题</h4><p>方式一：<br>指定Feign应该扫描的包：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@EnableFeignClients(basePackages = &quot;org.example.feign.clients&quot;)</span></span><br></pre></td></tr></table></figure></div>
+<p>方式二：<br>指定需要加载的Client接口: （推荐）</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@EnableFeignClients(clients = &#123;UserClient.class&#125;)</span></span><br></pre></td></tr></table></figure></div>
+
+
+
+]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
+      <tags>
+        <tag>Spring Cloud</tag>
+        <tag>Feign</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Cloud-Gateway篇(服务网关)</title>
+    <url>/2024/03/13/Spring-Cloud-Gateway%E7%AF%87-%E6%9C%8D%E5%8A%A1%E7%BD%91%E5%85%B3/</url>
+    <content><![CDATA[<h2 id="Gateway简介"><a href="#Gateway简介" class="headerlink" title="Gateway简介"></a>Gateway简介</h2><p>Spring Cloud Gateway 是 Spring Cloud 的一个全新项目，该项目是基于 Spring 5.0，Spring Boot 2.0 和 Project Reactor 等响应式编程和事件流技术开发的网关，它旨在为微服务架构提供一种简单有效的统一的 API 路由管理方式。</p>
+<h2 id="为什么需要网关"><a href="#为什么需要网关" class="headerlink" title="为什么需要网关"></a>为什么需要网关</h2><p>Gateway网关是我们服务的守门神，所有微服务的统一入口。</p>
+<p>网关的<strong>核心功能特性</strong>：</p>
+<ul>
+<li>请求路由</li>
+<li>权限控制</li>
+<li>限流</li>
+</ul>
+<p>架构图：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/gateway_01.png"
+                      alt="gateway"
+                ></p>
+<p><strong>权限控制</strong>：网关作为微服务入口，需要校验用户是是否有请求资格，如果没有则进行拦截。</p>
+<p><strong>路由和负载均衡</strong>：一切请求都必须先经过gateway，但网关不处理业务，而是根据某种规则，把请求转发到某个微服务，这个过程叫做路由。当然路由的目标服务有多个时，还需要做负载均衡。</p>
+<p><strong>限流</strong>：当请求流量过高时，在网关中按照下流的微服务能够接受的速度来放行请求，避免服务压力过大。</p>
+<p>在SpringCloud中网关的实现包括两种：</p>
+<ul>
+<li>gateway</li>
+<li>zuul</li>
+</ul>
+<p>Zuul是基于Servlet的实现，属于阻塞式编程。而SpringCloudGateway则是基于Spring5中提供的WebFlux，属于响应式编程的实现，具备更好的性能。</p>
+<h2 id="Gateway快速入门"><a href="#Gateway快速入门" class="headerlink" title="Gateway快速入门"></a>Gateway快速入门</h2><p>下面，我们就演示下网关的基本路由功能。基本步骤如下：</p>
+<ol>
+<li>创建SpringBoot工程gateway，引入网关依赖</li>
+<li>编写启动类</li>
+<li>编写基础配置和路由规则</li>
+<li>启动网关服务进行测试</li>
+</ol>
+<h3 id="创建gateway服务，引入依赖"><a href="#创建gateway服务，引入依赖" class="headerlink" title="创建gateway服务，引入依赖"></a>创建gateway服务，引入依赖</h3><p>创建服务：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/gateway_02.png"
+                      alt="create"
+                ><br>引入依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--网关--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-gateway<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!--nacos服务发现依赖--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-discovery<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<h3 id="编写启动类"><a href="#编写启动类" class="headerlink" title="编写启动类"></a>编写启动类</h3><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> cn.itcast.gateway;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">GatewayApplication</span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		SpringApplication.run(GatewayApplication.class, args);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<h3 id="编写基础配置和路由规则"><a href="#编写基础配置和路由规则" class="headerlink" title="编写基础配置和路由规则"></a>编写基础配置和路由规则</h3><p>创建application.yml文件，内容如下：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">10010</span> <span class="comment"># 网关端口</span></span><br><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">gateway</span> <span class="comment"># 服务名称</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span> <span class="comment"># nacos地址</span></span><br><span class="line">    <span class="attr">gateway:</span></span><br><span class="line">      <span class="attr">routes:</span> <span class="comment"># 网关路由配置</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">id:</span> <span class="string">user-service</span> <span class="comment"># 路由id，自定义，只要唯一即可</span></span><br><span class="line">          <span class="comment"># uri: http://127.0.0.1:8081 # 路由的目标地址 http就是固定地址</span></span><br><span class="line">          <span class="attr">uri:</span> <span class="string">lb://userservice</span> <span class="comment"># 路由的目标地址 lb就是负载均衡，后面跟服务名称</span></span><br><span class="line">          <span class="attr">predicates:</span> <span class="comment"># 路由断言，也就是判断请求是否符合路由规则的条件</span></span><br><span class="line">            <span class="bullet">-</span> <span class="string">Path=/user/**</span> <span class="comment"># 这个是按照路径匹配，只要以/user/开头就符合要求</span></span><br></pre></td></tr></table></figure></div>
+<p>我们将符合<code>Path</code> 规则的一切请求，都代理到 <code>uri</code>参数指定的地址。</p>
+<p>本例中，我们将 <code>/user/**</code>开头的请求，代理到<code>lb://userservice</code>，lb是负载均衡，根据服务名拉取服务列表，实现负载均衡。</p>
+<h3 id="重启测试"><a href="#重启测试" class="headerlink" title="重启测试"></a>重启测试</h3><p>重启网关，访问<a class="link"   href="http://localhost:10010/user/1" >http://localhost:10010/user/1 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>时，符合<code>/user/**</code>规则，请求转发到uri: <a class="link"   href="http://userservice/user/1" >http://userservice/user/1 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，得到了结果：</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/gateway_03.png"
+                      alt="create"
+                ></p>
+<h3 id="网关路由的流程图"><a href="#网关路由的流程图" class="headerlink" title="网关路由的流程图"></a>网关路由的流程图</h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/gateway_04.png"
+                      alt="create"
+                ><br>总结：</p>
+<p>网关搭建步骤：</p>
+<ol>
+<li><p>创建项目，引入nacos服务发现和gateway依赖</p>
+</li>
+<li><p>配置application.yml，包括服务基本信息、nacos地址、路由</p>
+</li>
+</ol>
+<p>路由配置包括：</p>
+<ol>
+<li><p>路由id：路由的唯一标示</p>
+</li>
+<li><p>路由目标（uri）：路由的目标地址，http代表固定地址，lb代表根据服务名负载均衡</p>
+</li>
+<li><p>路由断言（predicates）：判断路由的规则，</p>
+</li>
+<li><p>路由过滤器（filters）：对请求或响应做处理</p>
+</li>
+</ol>
+<p>下面就是路由断言和路由过滤器的详细知识</p>
+<h2 id="断言工厂"><a href="#断言工厂" class="headerlink" title="断言工厂"></a>断言工厂</h2><p>我们在配置文件中写的断言规则只是字符串，这些字符串会被Predicate Factory读取并处理，转变为路由判断的条件</p>
+<p>例如Path&#x3D;&#x2F;user&#x2F;**是按照路径匹配，这个规则是由</p>
+<p><code>org.springframework.cloud.gateway.handler.predicate.PathRoutePredicateFactory</code>类来</p>
+<p>处理的，像这样的断言工厂在SpringCloudGateway还有十几个:</p>
+<table>
+<thead>
+<tr>
+<th><strong>名称</strong></th>
+<th><strong>说明</strong></th>
+<th><strong>示例</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>After</td>
+<td>是某个时间点后的请求</td>
+<td>-  After&#x3D;2037-01-20T17:42:47.789-07:00[America&#x2F;Denver]</td>
+</tr>
+<tr>
+<td>Before</td>
+<td>是某个时间点之前的请求</td>
+<td>-  Before&#x3D;2031-04-13T15:14:47.433+08:00[Asia&#x2F;Shanghai]</td>
+</tr>
+<tr>
+<td>Between</td>
+<td>是某两个时间点之前的请求</td>
+<td>-  Between&#x3D;2037-01-20T17:42:47.789-07:00[America&#x2F;Denver],  2037-01-21T17:42:47.789-07:00[America&#x2F;Denver]</td>
+</tr>
+<tr>
+<td>Cookie</td>
+<td>请求必须包含某些cookie</td>
+<td>- Cookie&#x3D;chocolate, ch.p</td>
+</tr>
+<tr>
+<td>Header</td>
+<td>请求必须包含某些header</td>
+<td>- Header&#x3D;X-Request-Id, \d+</td>
+</tr>
+<tr>
+<td>Host</td>
+<td>请求必须是访问某个host（域名）</td>
+<td>-  Host&#x3D;<strong>.somehost.org,</strong>.anotherhost.org</td>
+</tr>
+<tr>
+<td>Method</td>
+<td>请求方式必须是指定方式</td>
+<td>- Method&#x3D;GET,POST</td>
+</tr>
+<tr>
+<td>Path</td>
+<td>请求路径必须符合指定规则</td>
+<td>- Path&#x3D;&#x2F;red&#x2F;{segment},&#x2F;blue&#x2F;**</td>
+</tr>
+<tr>
+<td>Query</td>
+<td>请求参数必须包含指定参数</td>
+<td>- Query&#x3D;name, Jack或者-  Query&#x3D;name</td>
+</tr>
+<tr>
+<td>RemoteAddr</td>
+<td>请求者的ip必须是指定范围</td>
+<td>- RemoteAddr&#x3D;192.168.1.1&#x2F;24</td>
+</tr>
+<tr>
+<td>Weight</td>
+<td>权重处理</td>
+<td></td>
+</tr>
+<tr>
+<td>我们只需要掌握Path这种路由工程就可以了。</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
+      <tags>
+        <tag>Spring Cloud</tag>
+        <tag>Gateway</tag>
       </tags>
   </entry>
 </search>
