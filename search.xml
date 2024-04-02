@@ -1359,4 +1359,49 @@
         <tag>Saas项目</tag>
       </tags>
   </entry>
+  <entry>
+    <title>算法学习(leetcode)</title>
+    <url>/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/</url>
+    <content><![CDATA[<h1 id="数组篇"><a href="#数组篇" class="headerlink" title="数组篇"></a>数组篇</h1><h2 id="二分法"><a href="#二分法" class="headerlink" title="二分法"></a>二分法</h2><h3 id="LeetCode704-二分查找"><a href="#LeetCode704-二分查找" class="headerlink" title="LeetCode704.二分查找"></a><a class="link"   href="https://leetcode.cn/problems/binary-search/description/" >LeetCode704.二分查找 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_01.png"
+                     
+                ></p>
+<ul>
+<li>二分查找，注意边界即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">search</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> right = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">while</span> (left &lt; right) &#123;</span><br><span class="line">            <span class="type">int</span> mid = left + ((right - left)&gt;&gt;<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (nums[mid] == target) &#123;</span><br><span class="line">                <span class="keyword">return</span> mid;</span><br><span class="line">            &#125;<span class="keyword">else</span> <span class="keyword">if</span> (nums[mid] &lt; target) &#123;</span><br><span class="line">                left = mid + <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                right = mid;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="双指针"><a href="#双指针" class="headerlink" title="双指针"></a>双指针</h2><h3 id="LeetCode27-移除元素"><a href="#LeetCode27-移除元素" class="headerlink" title="LeetCode27.移除元素"></a><a class="link"   href="https://leetcode.cn/problems/remove-element/description/" >LeetCode27.移除元素 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_02.png"
+                     
+                ></p>
+<ul>
+<li>本题要求<strong>原地</strong>删除元素，并且不用管超出新长度后面的元素。所谓<strong>原地删除</strong>就是用后面的数覆盖前面的数，那么这题就可以使用双指针：当快指针指到<strong>target</strong>的时候，那么快指针就跳过，继续遍历；否则将快指针所指的值赋值给慢指针。最后慢指针下标就是新数组的长度<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking.cdn.bcebos.com/gifs/27.%E7%A7%BB%E9%99%A4%E5%85%83%E7%B4%A0-%E5%8F%8C%E6%8C%87%E9%92%88%E6%B3%95.gif"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">removeElement</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> val)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//定义左右指针</span></span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//当右指针不越界就一直循环</span></span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>())&#123;</span><br><span class="line">            <span class="comment">//找到target， 跳过</span></span><br><span class="line">            <span class="keyword">if</span> (nums[right] == val) &#123;</span><br><span class="line">                right++;;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//否则赋值</span></span><br><span class="line">            nums[left++] = nums[right++];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//返回长度</span></span><br><span class="line">        <span class="keyword">return</span> left;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h1 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h1><h2 id="基础动规"><a href="#基础动规" class="headerlink" title="基础动规"></a>基础动规</h2><h3 id="LeetCode509-斐波那契数"><a href="#LeetCode509-斐波那契数" class="headerlink" title="LeetCode509.斐波那契数"></a><a class="link"   href="https://leetcode.cn/problems/fibonacci-number/description/" >LeetCode509.斐波那契数 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_dp_01.png"
+                     
+                ></p>
+<p><em>1.循环解法</em></p>
+<ul>
+<li>题目已经告诉递推公式为： F(n) &#x3D; F(n - 1) + F(n - 2)</li>
+<li>现在只需要初始化数组的前两个元素，后面依次循环即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="type">int</span> dp[<span class="number">31</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">2</span>; i &lt;= n;i++)&#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div>
+<em>2.递归解法</em></li>
+<li>确定递归终点：当F(n)递归到0 or 1时，直接返回。因为F(0) &#x3D; 0, F(1) &#x3D; 1;<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n &lt; <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">fib</span>(n - <span class="number">1</span>) + <span class="built_in">fib</span>(n - <span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>leetcode</tag>
+        <tag>算法</tag>
+      </tags>
+  </entry>
 </search>
