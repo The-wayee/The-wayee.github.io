@@ -689,159 +689,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring Cloud-Ribbon篇(负载均衡)</title>
-    <url>/2024/03/12/Spring-Cloud-Ribbon%E7%AF%87-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
-    <content><![CDATA[<h2 id="负载均衡原理"><a href="#负载均衡原理" class="headerlink" title="负载均衡原理"></a>负载均衡原理</h2><p>SpringCloud底层其实是利用了一个名为Ribbon的组件，来实现负载均衡功能的。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_01.png"
-                      alt="ribbon_01"
-                ></p>
-<p><strong>那么我们发出的请求明明是<a class="link"   href="http://userservice/user/1%EF%BC%8C%E6%80%8E%E4%B9%88%E5%8F%98%E6%88%90%E4%BA%86http://localhost:8081%E7%9A%84%E5%91%A2%EF%BC%9F" >http://userservice/user/1，怎么变成了http://localhost:8081的呢？ <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></strong></p>
-<h2 id="源码跟踪"><a href="#源码跟踪" class="headerlink" title="源码跟踪"></a>源码跟踪</h2><p>为什么我们只输入了service名称就可以访问了呢？之前还要获取ip和端口。</p>
-<p>显然有人帮我们根据service名称，获取到了服务实例的ip和端口。它就是<code>LoadBalancerInterceptor</code>，这个类会在对RestTemplate的请求进行拦截，然后从Eureka根据服务id获取服务列表，随后利用负载均衡算法得到真实的服务地址信息，替换服务id。</p>
-<p>我们进行源码跟踪：</p>
-<h3 id="LoadBalancerIntercepor"><a href="#LoadBalancerIntercepor" class="headerlink" title="LoadBalancerIntercepor"></a>LoadBalancerIntercepor</h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_02.png"
-                      alt="LoadBalancerIntercepor"
-                ><br>可以看到这里的intercept方法，拦截了用户的HttpRequest请求，然后做了几件事：</p>
-<ul>
-<li><code>request.getURI()</code>：获取请求uri，本例中就是 <a class="link"   href="http://user-service/user/8" >http://user-service/user/8 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
-<li><code>originalUri.getHost()</code>：获取uri路径的主机名，其实就是服务id，<code>user-service</code></li>
-<li><code>this.loadBalancer.execute()</code>：处理服务id，和用户请求。<br>这里的<code>this.loadBalancer</code>是<code>LoadBalancerClient</code>类型，我们继续跟入。</li>
-</ul>
-<h3 id="LoadBalancerClient"><a href="#LoadBalancerClient" class="headerlink" title="LoadBalancerClient"></a>LoadBalancerClient</h3><p>继续跟入execute方法：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_03.png"
-                      alt="LoadBalancerClient"
-                ><br>代码是这样的：</p>
-<ul>
-<li>getLoadBalancer(serviceId)：根据服务id获取ILoadBalancer，而ILoadBalancer会拿着服务id去eureka中获取服务列表并保存起来。</li>
-<li>getServer(loadBalancer)：利用内置的负载均衡算法，从服务列表中选择一个。本例中，可以看到获取了8082端口的服务<br>放行后，再次访问并跟踪，发现获取的是8081：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_04.png"
-                      alt="负载均衡"
-                ></li>
-</ul>
-<h3 id="负载均衡策略IRule"><a href="#负载均衡策略IRule" class="headerlink" title="负载均衡策略IRule"></a>负载均衡策略IRule</h3><p>在刚才的代码中，可以看到获取服务使通过一个<code>getServer</code>方法来做负载均衡:<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_04.png"
-                      alt="IRule"
-                ><br>我们继续跟入：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_05.png"
-                      alt="负载均衡"
-                ><br>继续跟踪源码chooseServer方法，发现这么一段代码：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_06.png"
-                      alt="chooseServer"
-                ><br>我们看看这个rule是谁：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_07.png"
-                      alt="DefaultRule"
-                ><br>这里的rule默认值是一个<code>RoundRobinRule</code>，也就是轮询</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_08.png"
-                      alt="DefaultRule"
-                ></p>
-<p>基本流程如下：</p>
-<ul>
-<li>拦截我们的RestTemplate请求<a class="link"   href="http://userservice/user/1" >http://userservice/user/1 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
-<li>RibbonLoadBalancerClient会从请求url中获取服务名称，也就是user-service</li>
-<li>DynamicServerListLoadBalancer根据user-service到eureka拉取服务列表</li>
-<li>eureka返回列表，localhost:8081、localhost:8082</li>
-<li>IRule利用内置负载均衡规则，从列表中选择一个，例如localhost:8081</li>
-<li>RibbonLoadBalancerClient修改请求地址，用localhost:8081替代userservice，得到<a class="link"   href="http://localhost:8081/user/1%EF%BC%8C%E5%8F%91%E8%B5%B7%E7%9C%9F%E5%AE%9E%E8%AF%B7%E6%B1%82" >http://localhost:8081/user/1，发起真实请求 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
-</ul>
-<h2 id="负载均衡策略"><a href="#负载均衡策略" class="headerlink" title="负载均衡策略"></a>负载均衡策略</h2><p>负载均衡的规则都定义在IRule接口中，而IRule有很多不同的实现类：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_08.png"
-                      alt="策略"
-                ><br>不同规则含义如下：</p>
-<table>
-<thead>
-<tr>
-<th><strong>内置负载均衡规则类</strong></th>
-<th><strong>规则描述</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>RoundRobinRule</td>
-<td>简单轮询服务列表来选择服务器。它是Ribbon默认的负载均衡规则。</td>
-</tr>
-<tr>
-<td>AvailabilityFilteringRule</td>
-<td>对以下两种服务器进行忽略：   （1）在默认情况下，这台服务器如果3次连接失败，这台服务器就会被设置为“短路”状态。短路状态将持续30秒，如果再次连接失败，短路的持续时间就会几何级地增加。  （2）并发数过高的服务器。如果一个服务器的并发连接数过高，配置了AvailabilityFilteringRule规则的客户端也会将其忽略。并发连接数的上限，可以由客户端的<clientName>.<clientConfigNameSpace>.ActiveConnectionsLimit属性进行配置。</td>
-</tr>
-<tr>
-<td>WeightedResponseTimeRule</td>
-<td>为每一个服务器赋予一个权重值。服务器响应时间越长，这个服务器的权重就越小。这个规则会随机选择服务器，这个权重值会影响服务器的选择。</td>
-</tr>
-<tr>
-<td><strong>ZoneAvoidanceRule</strong></td>
-<td>以区域可用的服务器为基础进行服务器的选择。使用Zone对服务器进行分类，这个Zone可以理解为一个机房、一个机架等。而后再对Zone内的多个服务做轮询。</td>
-</tr>
-<tr>
-<td>BestAvailableRule</td>
-<td>忽略那些短路的服务器，并选择并发数较低的服务器。</td>
-</tr>
-<tr>
-<td>RandomRule</td>
-<td>随机选择一个可用的服务器。</td>
-</tr>
-<tr>
-<td>RetryRule</td>
-<td>重试机制的选择逻辑</td>
-</tr>
-</tbody></table>
-<h3 id="自定义负载均衡策略"><a href="#自定义负载均衡策略" class="headerlink" title="自定义负载均衡策略"></a>自定义负载均衡策略</h3><p>通过定义IRule实现可以修改负载均衡规则，有两种方式：</p>
-<ol>
-<li>代码方式：在order-service中的OrderApplication类中，定义一个新的IRule：<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> IRule <span class="title function_">randomRule</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RandomRule</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
-<li>配置文件方式：在order-service的application.yml文件中，添加新的配置也可以修改规则：<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span> <span class="comment"># 给某个微服务配置负载均衡规则，这里是userservice服务</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.netflix.loadbalancer.RandomRule</span> <span class="comment"># 负载均衡规则 </span></span><br></pre></td></tr></table></figure></div>
-<strong>注意</strong>，一般用默认的负载均衡规则，不做修改。</li>
-</ol>
-<h2 id="饥饿加载"><a href="#饥饿加载" class="headerlink" title="饥饿加载"></a>饥饿加载</h2><p>Ribbon默认是采用懒加载，即第一次访问时才会去创建LoadBalanceClient，请求时间会很长。</p>
-<p>而饥饿加载则会在项目启动时创建，降低第一次访问的耗时，通过下面配置开启饥饿加载：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">ribbon:</span></span><br><span class="line">  <span class="attr">eager-load:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">clients:</span> <span class="string">userservice</span></span><br></pre></td></tr></table></figure></div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-]]></content>
-      <categories>
-        <category>学习</category>
-      </categories>
-      <tags>
-        <tag>Spring Cloud</tag>
-        <tag>Ribbon</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Spring Cloud-Nacos篇(注册中心)</title>
     <url>/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
     <content><![CDATA[<h2 id="认识-Nacos"><a href="#认识-Nacos" class="headerlink" title="认识 Nacos"></a>认识 Nacos</h2><p><a class="link"   href="https://nacos.io/" >Nacos <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>是阿里巴巴的产品，现在是<a class="link"   href="https://spring.io/projects/spring-cloud" >SpringCloud <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中的一个组件。相比<a class="link"   href="https://github.com/Netflix/eureka" >Eureka <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>功能更加丰富，在国内受欢迎程度较高。<br><img  
@@ -1070,99 +917,156 @@
       </tags>
   </entry>
   <entry>
-    <title>算法学习(leetcode)</title>
-    <url>/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/</url>
-    <content><![CDATA[<h1 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h1><h2 id="二分法"><a href="#二分法" class="headerlink" title="二分法"></a>二分法</h2><h3 id="LeetCode704-二分查找"><a href="#LeetCode704-二分查找" class="headerlink" title="LeetCode704.二分查找"></a><a class="link"   href="https://leetcode.cn/problems/binary-search/description/" >LeetCode704.二分查找 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+    <title>Spring Cloud-Ribbon篇(负载均衡)</title>
+    <url>/2024/03/12/Spring-Cloud-Ribbon%E7%AF%87-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
+    <content><![CDATA[<h2 id="负载均衡原理"><a href="#负载均衡原理" class="headerlink" title="负载均衡原理"></a>负载均衡原理</h2><p>SpringCloud底层其实是利用了一个名为Ribbon的组件，来实现负载均衡功能的。<br><img  
                      lazyload
                      src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_01.png"
-                     
+                     data-src="/assets/imgs/ribbon_01.png"
+                      alt="ribbon_01"
                 ></p>
-<ul>
-<li>二分查找，注意边界即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">search</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> right = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">while</span> (left &lt; right) &#123;</span><br><span class="line">            <span class="type">int</span> mid = left + ((right - left)&gt;&gt;<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (nums[mid] == target) &#123;</span><br><span class="line">                <span class="keyword">return</span> mid;</span><br><span class="line">            &#125;<span class="keyword">else</span> <span class="keyword">if</span> (nums[mid] &lt; target) &#123;</span><br><span class="line">                left = mid + <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                right = mid;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="双指针"><a href="#双指针" class="headerlink" title="双指针"></a>双指针</h2><h3 id="LeetCode27-移除元素"><a href="#LeetCode27-移除元素" class="headerlink" title="LeetCode27.移除元素"></a><a class="link"   href="https://leetcode.cn/problems/remove-element/description/" >LeetCode27.移除元素 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+<p><strong>那么我们发出的请求明明是<a class="link"   href="http://userservice/user/1%EF%BC%8C%E6%80%8E%E4%B9%88%E5%8F%98%E6%88%90%E4%BA%86http://localhost:8081%E7%9A%84%E5%91%A2%EF%BC%9F" >http://userservice/user/1，怎么变成了http://localhost:8081的呢？ <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></strong></p>
+<h2 id="源码跟踪"><a href="#源码跟踪" class="headerlink" title="源码跟踪"></a>源码跟踪</h2><p>为什么我们只输入了service名称就可以访问了呢？之前还要获取ip和端口。</p>
+<p>显然有人帮我们根据service名称，获取到了服务实例的ip和端口。它就是<code>LoadBalancerInterceptor</code>，这个类会在对RestTemplate的请求进行拦截，然后从Eureka根据服务id获取服务列表，随后利用负载均衡算法得到真实的服务地址信息，替换服务id。</p>
+<p>我们进行源码跟踪：</p>
+<h3 id="LoadBalancerIntercepor"><a href="#LoadBalancerIntercepor" class="headerlink" title="LoadBalancerIntercepor"></a>LoadBalancerIntercepor</h3><p><img  
                      lazyload
                      src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_02.png"
-                     
+                     data-src="/assets/imgs/ribbon_02.png"
+                      alt="LoadBalancerIntercepor"
+                ><br>可以看到这里的intercept方法，拦截了用户的HttpRequest请求，然后做了几件事：</p>
+<ul>
+<li><code>request.getURI()</code>：获取请求uri，本例中就是 <a class="link"   href="http://user-service/user/8" >http://user-service/user/8 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
+<li><code>originalUri.getHost()</code>：获取uri路径的主机名，其实就是服务id，<code>user-service</code></li>
+<li><code>this.loadBalancer.execute()</code>：处理服务id，和用户请求。<br>这里的<code>this.loadBalancer</code>是<code>LoadBalancerClient</code>类型，我们继续跟入。</li>
+</ul>
+<h3 id="LoadBalancerClient"><a href="#LoadBalancerClient" class="headerlink" title="LoadBalancerClient"></a>LoadBalancerClient</h3><p>继续跟入execute方法：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_03.png"
+                      alt="LoadBalancerClient"
+                ><br>代码是这样的：</p>
+<ul>
+<li>getLoadBalancer(serviceId)：根据服务id获取ILoadBalancer，而ILoadBalancer会拿着服务id去eureka中获取服务列表并保存起来。</li>
+<li>getServer(loadBalancer)：利用内置的负载均衡算法，从服务列表中选择一个。本例中，可以看到获取了8082端口的服务<br>放行后，再次访问并跟踪，发现获取的是8081：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_04.png"
+                      alt="负载均衡"
+                ></li>
+</ul>
+<h3 id="负载均衡策略IRule"><a href="#负载均衡策略IRule" class="headerlink" title="负载均衡策略IRule"></a>负载均衡策略IRule</h3><p>在刚才的代码中，可以看到获取服务使通过一个<code>getServer</code>方法来做负载均衡:<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_04.png"
+                      alt="IRule"
+                ><br>我们继续跟入：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_05.png"
+                      alt="负载均衡"
+                ><br>继续跟踪源码chooseServer方法，发现这么一段代码：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_06.png"
+                      alt="chooseServer"
+                ><br>我们看看这个rule是谁：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_07.png"
+                      alt="DefaultRule"
+                ><br>这里的rule默认值是一个<code>RoundRobinRule</code>，也就是轮询</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_08.png"
+                      alt="DefaultRule"
                 ></p>
+<p>基本流程如下：</p>
 <ul>
-<li>本题要求<strong>原地</strong>删除元素，并且不用管超出新长度后面的元素。所谓<strong>原地删除</strong>就是用后面的数覆盖前面的数，那么这题就可以使用双指针：当快指针指到<strong>target</strong>的时候，那么快指针就跳过，继续遍历；否则将快指针所指的值赋值给慢指针。最后慢指针下标就是新数组的长度<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking.cdn.bcebos.com/gifs/27.%E7%A7%BB%E9%99%A4%E5%85%83%E7%B4%A0-%E5%8F%8C%E6%8C%87%E9%92%88%E6%B3%95.gif"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">removeElement</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> val)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//定义左右指针</span></span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//当右指针不越界就一直循环</span></span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>())&#123;</span><br><span class="line">            <span class="comment">//找到target， 跳过</span></span><br><span class="line">            <span class="keyword">if</span> (nums[right] == val) &#123;</span><br><span class="line">                right++;;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//否则赋值</span></span><br><span class="line">            nums[left++] = nums[right++];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//返回长度</span></span><br><span class="line">        <span class="keyword">return</span> left;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure></div></li>
+<li>拦截我们的RestTemplate请求<a class="link"   href="http://userservice/user/1" >http://userservice/user/1 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
+<li>RibbonLoadBalancerClient会从请求url中获取服务名称，也就是user-service</li>
+<li>DynamicServerListLoadBalancer根据user-service到eureka拉取服务列表</li>
+<li>eureka返回列表，localhost:8081、localhost:8082</li>
+<li>IRule利用内置负载均衡规则，从列表中选择一个，例如localhost:8081</li>
+<li>RibbonLoadBalancerClient修改请求地址，用localhost:8081替代userservice，得到<a class="link"   href="http://localhost:8081/user/1%EF%BC%8C%E5%8F%91%E8%B5%B7%E7%9C%9F%E5%AE%9E%E8%AF%B7%E6%B1%82" >http://localhost:8081/user/1，发起真实请求 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
 </ul>
-<h3 id="LeetCode977-有序数组的平方"><a href="#LeetCode977-有序数组的平方" class="headerlink" title="LeetCode977.有序数组的平方"></a><a class="link"   href="https://leetcode.cn/problems/squares-of-a-sorted-array/description/" >LeetCode977.有序数组的平方 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+<h2 id="负载均衡策略"><a href="#负载均衡策略" class="headerlink" title="负载均衡策略"></a>负载均衡策略</h2><p>负载均衡的规则都定义在IRule接口中，而IRule有很多不同的实现类：<br><img  
                      lazyload
                      src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_03.png"
-                     
-                ></p>
-<ul>
-<li>这道题给出一个<code>非递减</code>的数组，希望我们返回一个<code>非递减的平方</code>数组，同时要求log(n)的时间复杂度,那么说明我们需要只遍历一遍数组.这时候可以使用双指针，从数组的左右两侧分别往中间遍历。因为这是<code>非递减</code>数组，所以将数组元素平方后，平方后较大数只会出现在数组两侧。只需要左右指针往中间遍历过程中比较较大数，然后把较大数从后往前放入<code>目标数组</code>即可。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking.cdn.bcebos.com/gifs/977.%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E7%9A%84%E5%B9%B3%E6%96%B9.gif"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">sortedSquares</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> size = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">result</span><span class="params">(size, <span class="number">0</span>)</span></span>;</span><br><span class="line">        <span class="type">int</span> index = size - <span class="number">1</span>;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;   <span class="comment">//左指针</span></span><br><span class="line">        <span class="type">int</span> right = size - <span class="number">1</span>;   <span class="comment">//右指针</span></span><br><span class="line">        <span class="keyword">while</span>(left &lt;= right) &#123;</span><br><span class="line">            <span class="comment">//左右指针比较，将较大数从后往前放入result数组</span></span><br><span class="line">            <span class="keyword">if</span>(<span class="built_in">pow</span>(nums[left], <span class="number">2</span>) &lt; <span class="built_in">pow</span>(nums[right], <span class="number">2</span>)) &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[right], <span class="number">2</span>);</span><br><span class="line">                right--;</span><br><span class="line">            &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[left], <span class="number">2</span>);</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="滑动窗口"><a href="#滑动窗口" class="headerlink" title="滑动窗口"></a>滑动窗口</h2><h3 id="LeetCode209-长度最小的子数组"><a href="#LeetCode209-长度最小的子数组" class="headerlink" title="LeetCode209.长度最小的子数组"></a><a class="link"   href="https://leetcode.cn/problems/minimum-size-subarray-sum/description/" >LeetCode209.长度最小的子数组 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_04.png"
-                     
-                ></p>
-<ul>
-<li>本题需要查找一个<code>总和</code>大于等于<code>target</code>的<code>最小子序列</code>。那么这题就可以使用滑动窗口，也是属于双指针的一种方法。让右指针往右探寻一个总和大于等于<code>target</code>的<code>子序列</code>。每当探寻到之后，将左指针依次往右移动，不断缩小左指针和右指针之间的<code>总和</code>，判断这个<code>总和</code>是否大于<code>target</code>：大于就<code>缩小窗口</code>(子序列长度)，左指针往右探寻最小<code>最小窗口</code>;小于就<code>扩大窗口</code>，右指针重复往右探寻<code>总和</code>大于<code>target</code>的<code>子序列</code>。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking.cdn.bcebos.com/gifs/209.%E9%95%BF%E5%BA%A6%E6%9C%80%E5%B0%8F%E7%9A%84%E5%AD%90%E6%95%B0%E7%BB%84.gif"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">minSubArrayLen</span><span class="params">(<span class="type">int</span> target, vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> result = INT_MAX;</span><br><span class="line">        <span class="type">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>()) &#123;</span><br><span class="line">            <span class="comment">//右指针往右探寻总和大于target的子序列</span></span><br><span class="line">            sum += nums[right++];</span><br><span class="line">            <span class="comment">//左指针往右缩小窗口，寻找最小窗口</span></span><br><span class="line">            <span class="keyword">while</span>(sum &gt;= target) &#123;</span><br><span class="line">                result = <span class="built_in">min</span>(result, right - left);</span><br><span class="line">                sum -= nums[left++];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果result没有被赋值过，说明右指针一直往右探寻到数组末尾都没找到满足的子序列</span></span><br><span class="line">        <span class="keyword">return</span> result == INT_MAX ? <span class="number">0</span> : result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="区间判定"><a href="#区间判定" class="headerlink" title="区间判定"></a>区间判定</h2><h3 id="LeetCode59-螺旋矩阵-II"><a href="#LeetCode59-螺旋矩阵-II" class="headerlink" title="LeetCode59.螺旋矩阵 II"></a><a class="link"   href="https://leetcode.cn/problems/spiral-matrix-ii/description/" >LeetCode59.螺旋矩阵 II <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_05.png"
-                     
-                ></p>
-<ul>
-<li>这道题写了不下三次了，每次我都写不出来，不知道如何下手，这次算基本搞清楚了。这题可以算是对<code>区间</code>的拆分，例如样例所示，当n&#x3D;3时，顺时针循环填充，最外圈有八个数。循环填充时，分为<code>上</code>、<code>右</code>、<code>下</code>、<code>左</code>，每次循环只填充两个数，将区间给拆分出来，<code>上</code>填充1、2; <code>右</code>填充3、4; <code>下</code>填充5、6; <code>左</code>填充7、8。这样就不会互相干扰了，并且每个指针循环结束后正好指向的是下一个循环的开始情况，不会存在越界情况。再往中间进一层也是同样的道理，不过需要判断到底有多少层，还有每次进一层的话，顺时针填充的<code>开始索引</code>和<code>结束索引</code>都要向内收缩一格。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking-1253855093.file.myqcloud.com/pics/20220922102236.png"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">generateMatrix</span>(<span class="type">int</span> n) &#123;</span><br><span class="line">        vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">result</span>(n, <span class="built_in">vector</span>&lt;<span class="type">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">        <span class="comment">// loop表示有多少层</span></span><br><span class="line">        <span class="type">int</span> loop = n / <span class="number">2</span>;</span><br><span class="line">        <span class="comment">//每层遍历开始时的x ,y下标(左边界), 每进一层都要+1</span></span><br><span class="line">        <span class="type">int</span> x_start = <span class="number">0</span>, y_start = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//右边界需要收缩的量, 每进一层收缩的量都要+1</span></span><br><span class="line">        <span class="type">int</span> offset = <span class="number">1</span>; </span><br><span class="line">        <span class="comment">//顺时针填充的计数值</span></span><br><span class="line">        <span class="type">int</span> count = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">//每层遍历的x ,y下标  遵循上、右、下、左</span></span><br><span class="line">        <span class="type">int</span> x, y;</span><br><span class="line">        <span class="keyword">while</span>(loop--) &#123;</span><br><span class="line">            x = x_start;</span><br><span class="line">            y = y_start;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">//上的从左到右</span></span><br><span class="line">            <span class="keyword">for</span>(; y &lt; n - offset; y++)&#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右的从上到下</span></span><br><span class="line">            <span class="keyword">for</span>(; x &lt; n - offset; x++) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//下的从右到左</span></span><br><span class="line">            <span class="keyword">for</span>(; y &gt; y_start; y--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//左的从下到上</span></span><br><span class="line">            <span class="keyword">for</span>(; x &gt; x_start; x--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右边界收缩</span></span><br><span class="line">            offset++;</span><br><span class="line">            <span class="comment">//左边界收缩</span></span><br><span class="line">            x_start++;</span><br><span class="line">            y_start++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果层次是奇数，需要额外处理中心数据</span></span><br><span class="line">        <span class="keyword">if</span> (n % <span class="number">2</span>) &#123;</span><br><span class="line">            result[n / <span class="number">2</span>][n / <span class="number">2</span>] = count;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h1 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h1><h2 id="基础动规"><a href="#基础动规" class="headerlink" title="基础动规"></a>基础动规</h2><h3 id="LeetCode509-斐波那契数"><a href="#LeetCode509-斐波那契数" class="headerlink" title="LeetCode509.斐波那契数"></a><a class="link"   href="https://leetcode.cn/problems/fibonacci-number/description/" >LeetCode509.斐波那契数 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_dp_01.png"
-                     
-                ></p>
-<p><em>1.循环解法</em></p>
-<ul>
-<li>题目已经告诉递推公式为： F(n) &#x3D; F(n - 1) + F(n - 2)</li>
-<li>现在只需要初始化数组的前两个元素，后面依次循环即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="type">int</span> dp[<span class="number">31</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">2</span>; i &lt;= n;i++)&#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div>
-<em>2.递归解法</em></li>
-<li>确定递归终点：当F(n)递归到0 or 1时，直接返回。因为F(0) &#x3D; 0, F(1) &#x3D; 1;<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n &lt; <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">fib</span>(n - <span class="number">1</span>) + <span class="built_in">fib</span>(n - <span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h3 id="LeetCode70-爬楼梯"><a href="#LeetCode70-爬楼梯" class="headerlink" title="LeetCode70.爬楼梯"></a><a class="link"   href="https://leetcode.cn/problems/climbing-stairs/description/" >LeetCode70.爬楼梯 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_dp_02.png"
-                     
-                ></p>
-<ul>
-<li>本题和斐波那契数列一样，当前阶f(n)可以从前一阶f(n - 1)和前两阶f(n - 2)达到。定义一个dp数组，记录达到当前阶的方法数量，那么dp[n] &#x3D; dp[n - 1] + dp[n - 2]<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> dp[<span class="number">55</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">climbStairs</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//初始化dp，第一阶和第二阶分别是1和2，表示有一种方法到达第一阶和两种方法到达第二阶</span></span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        dp[<span class="number">2</span>] = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">3</span>; i &lt;= n; i++) &#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
+                     data-src="/assets/imgs/ribbon_08.png"
+                      alt="策略"
+                ><br>不同规则含义如下：</p>
+<table>
+<thead>
+<tr>
+<th><strong>内置负载均衡规则类</strong></th>
+<th><strong>规则描述</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RoundRobinRule</td>
+<td>简单轮询服务列表来选择服务器。它是Ribbon默认的负载均衡规则。</td>
+</tr>
+<tr>
+<td>AvailabilityFilteringRule</td>
+<td>对以下两种服务器进行忽略：   （1）在默认情况下，这台服务器如果3次连接失败，这台服务器就会被设置为“短路”状态。短路状态将持续30秒，如果再次连接失败，短路的持续时间就会几何级地增加。  （2）并发数过高的服务器。如果一个服务器的并发连接数过高，配置了AvailabilityFilteringRule规则的客户端也会将其忽略。并发连接数的上限，可以由客户端的<clientName>.<clientConfigNameSpace>.ActiveConnectionsLimit属性进行配置。</td>
+</tr>
+<tr>
+<td>WeightedResponseTimeRule</td>
+<td>为每一个服务器赋予一个权重值。服务器响应时间越长，这个服务器的权重就越小。这个规则会随机选择服务器，这个权重值会影响服务器的选择。</td>
+</tr>
+<tr>
+<td><strong>ZoneAvoidanceRule</strong></td>
+<td>以区域可用的服务器为基础进行服务器的选择。使用Zone对服务器进行分类，这个Zone可以理解为一个机房、一个机架等。而后再对Zone内的多个服务做轮询。</td>
+</tr>
+<tr>
+<td>BestAvailableRule</td>
+<td>忽略那些短路的服务器，并选择并发数较低的服务器。</td>
+</tr>
+<tr>
+<td>RandomRule</td>
+<td>随机选择一个可用的服务器。</td>
+</tr>
+<tr>
+<td>RetryRule</td>
+<td>重试机制的选择逻辑</td>
+</tr>
+</tbody></table>
+<h3 id="自定义负载均衡策略"><a href="#自定义负载均衡策略" class="headerlink" title="自定义负载均衡策略"></a>自定义负载均衡策略</h3><p>通过定义IRule实现可以修改负载均衡规则，有两种方式：</p>
+<ol>
+<li>代码方式：在order-service中的OrderApplication类中，定义一个新的IRule：<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> IRule <span class="title function_">randomRule</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RandomRule</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
+<li>配置文件方式：在order-service的application.yml文件中，添加新的配置也可以修改规则：<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span> <span class="comment"># 给某个微服务配置负载均衡规则，这里是userservice服务</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.netflix.loadbalancer.RandomRule</span> <span class="comment"># 负载均衡规则 </span></span><br></pre></td></tr></table></figure></div>
+<strong>注意</strong>，一般用默认的负载均衡规则，不做修改。</li>
+</ol>
+<h2 id="饥饿加载"><a href="#饥饿加载" class="headerlink" title="饥饿加载"></a>饥饿加载</h2><p>Ribbon默认是采用懒加载，即第一次访问时才会去创建LoadBalanceClient，请求时间会很长。</p>
+<p>而饥饿加载则会在项目启动时创建，降低第一次访问的耗时，通过下面配置开启饥饿加载：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">ribbon:</span></span><br><span class="line">  <span class="attr">eager-load:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">clients:</span> <span class="string">userservice</span></span><br></pre></td></tr></table></figure></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
       <tags>
-        <tag>leetcode</tag>
-        <tag>算法</tag>
+        <tag>Spring Cloud</tag>
+        <tag>Ribbon</tag>
       </tags>
   </entry>
   <entry>
@@ -1453,6 +1357,102 @@
       </categories>
       <tags>
         <tag>redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>算法学习(leetcode)</title>
+    <url>/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/</url>
+    <content><![CDATA[<h1 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h1><h2 id="二分法"><a href="#二分法" class="headerlink" title="二分法"></a>二分法</h2><h3 id="LeetCode704-二分查找"><a href="#LeetCode704-二分查找" class="headerlink" title="LeetCode704.二分查找"></a><a class="link"   href="https://leetcode.cn/problems/binary-search/description/" >LeetCode704.二分查找 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_01.png"
+                     
+                ></p>
+<ul>
+<li>二分查找，注意边界即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">search</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> right = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">while</span> (left &lt; right) &#123;</span><br><span class="line">            <span class="type">int</span> mid = left + ((right - left)&gt;&gt;<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (nums[mid] == target) &#123;</span><br><span class="line">                <span class="keyword">return</span> mid;</span><br><span class="line">            &#125;<span class="keyword">else</span> <span class="keyword">if</span> (nums[mid] &lt; target) &#123;</span><br><span class="line">                left = mid + <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                right = mid;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="双指针"><a href="#双指针" class="headerlink" title="双指针"></a>双指针</h2><h3 id="LeetCode27-移除元素"><a href="#LeetCode27-移除元素" class="headerlink" title="LeetCode27.移除元素"></a><a class="link"   href="https://leetcode.cn/problems/remove-element/description/" >LeetCode27.移除元素 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_02.png"
+                     
+                ></p>
+<ul>
+<li>本题要求<strong>原地</strong>删除元素，并且不用管超出新长度后面的元素。所谓<strong>原地删除</strong>就是用后面的数覆盖前面的数，那么这题就可以使用双指针：当快指针指到<strong>target</strong>的时候，那么快指针就跳过，继续遍历；否则将快指针所指的值赋值给慢指针。最后慢指针下标就是新数组的长度<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking.cdn.bcebos.com/gifs/27.%E7%A7%BB%E9%99%A4%E5%85%83%E7%B4%A0-%E5%8F%8C%E6%8C%87%E9%92%88%E6%B3%95.gif"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">removeElement</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> val)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//定义左右指针</span></span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//当右指针不越界就一直循环</span></span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>())&#123;</span><br><span class="line">            <span class="comment">//找到target， 跳过</span></span><br><span class="line">            <span class="keyword">if</span> (nums[right] == val) &#123;</span><br><span class="line">                right++;;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//否则赋值</span></span><br><span class="line">            nums[left++] = nums[right++];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//返回长度</span></span><br><span class="line">        <span class="keyword">return</span> left;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h3 id="LeetCode977-有序数组的平方"><a href="#LeetCode977-有序数组的平方" class="headerlink" title="LeetCode977.有序数组的平方"></a><a class="link"   href="https://leetcode.cn/problems/squares-of-a-sorted-array/description/" >LeetCode977.有序数组的平方 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_03.png"
+                     
+                ></p>
+<ul>
+<li>这道题给出一个<code>非递减</code>的数组，希望我们返回一个<code>非递减的平方</code>数组，同时要求log(n)的时间复杂度,那么说明我们需要只遍历一遍数组.这时候可以使用双指针，从数组的左右两侧分别往中间遍历。因为这是<code>非递减</code>数组，所以将数组元素平方后，平方后较大数只会出现在数组两侧。只需要左右指针往中间遍历过程中比较较大数，然后把较大数从后往前放入<code>目标数组</code>即可。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking.cdn.bcebos.com/gifs/977.%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E7%9A%84%E5%B9%B3%E6%96%B9.gif"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">sortedSquares</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> size = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">result</span><span class="params">(size, <span class="number">0</span>)</span></span>;</span><br><span class="line">        <span class="type">int</span> index = size - <span class="number">1</span>;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;   <span class="comment">//左指针</span></span><br><span class="line">        <span class="type">int</span> right = size - <span class="number">1</span>;   <span class="comment">//右指针</span></span><br><span class="line">        <span class="keyword">while</span>(left &lt;= right) &#123;</span><br><span class="line">            <span class="comment">//左右指针比较，将较大数从后往前放入result数组</span></span><br><span class="line">            <span class="keyword">if</span>(<span class="built_in">pow</span>(nums[left], <span class="number">2</span>) &lt; <span class="built_in">pow</span>(nums[right], <span class="number">2</span>)) &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[right], <span class="number">2</span>);</span><br><span class="line">                right--;</span><br><span class="line">            &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[left], <span class="number">2</span>);</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="滑动窗口"><a href="#滑动窗口" class="headerlink" title="滑动窗口"></a>滑动窗口</h2><h3 id="LeetCode209-长度最小的子数组"><a href="#LeetCode209-长度最小的子数组" class="headerlink" title="LeetCode209.长度最小的子数组"></a><a class="link"   href="https://leetcode.cn/problems/minimum-size-subarray-sum/description/" >LeetCode209.长度最小的子数组 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_04.png"
+                     
+                ></p>
+<ul>
+<li>本题需要查找一个<code>总和</code>大于等于<code>target</code>的<code>最小子序列</code>。那么这题就可以使用滑动窗口，也是属于双指针的一种方法。让右指针往右探寻一个总和大于等于<code>target</code>的<code>子序列</code>。每当探寻到之后，将左指针依次往右移动，不断缩小左指针和右指针之间的<code>总和</code>，判断这个<code>总和</code>是否大于<code>target</code>：大于就<code>缩小窗口</code>(子序列长度)，左指针往右探寻最小<code>最小窗口</code>;小于就<code>扩大窗口</code>，右指针重复往右探寻<code>总和</code>大于<code>target</code>的<code>子序列</code>。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking.cdn.bcebos.com/gifs/209.%E9%95%BF%E5%BA%A6%E6%9C%80%E5%B0%8F%E7%9A%84%E5%AD%90%E6%95%B0%E7%BB%84.gif"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">minSubArrayLen</span><span class="params">(<span class="type">int</span> target, vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> result = INT_MAX;</span><br><span class="line">        <span class="type">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>()) &#123;</span><br><span class="line">            <span class="comment">//右指针往右探寻总和大于target的子序列</span></span><br><span class="line">            sum += nums[right++];</span><br><span class="line">            <span class="comment">//左指针往右缩小窗口，寻找最小窗口</span></span><br><span class="line">            <span class="keyword">while</span>(sum &gt;= target) &#123;</span><br><span class="line">                result = <span class="built_in">min</span>(result, right - left);</span><br><span class="line">                sum -= nums[left++];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果result没有被赋值过，说明右指针一直往右探寻到数组末尾都没找到满足的子序列</span></span><br><span class="line">        <span class="keyword">return</span> result == INT_MAX ? <span class="number">0</span> : result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="区间判定"><a href="#区间判定" class="headerlink" title="区间判定"></a>区间判定</h2><h3 id="LeetCode59-螺旋矩阵-II"><a href="#LeetCode59-螺旋矩阵-II" class="headerlink" title="LeetCode59.螺旋矩阵 II"></a><a class="link"   href="https://leetcode.cn/problems/spiral-matrix-ii/description/" >LeetCode59.螺旋矩阵 II <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_05.png"
+                     
+                ></p>
+<ul>
+<li>这道题写了不下三次了，每次我都写不出来，不知道如何下手，这次算基本搞清楚了。这题可以算是对<code>区间</code>的拆分，例如样例所示，当n&#x3D;3时，顺时针循环填充，最外圈有八个数。循环填充时，分为<code>上</code>、<code>右</code>、<code>下</code>、<code>左</code>，每次循环只填充两个数，将区间给拆分出来，<code>上</code>填充1、2; <code>右</code>填充3、4; <code>下</code>填充5、6; <code>左</code>填充7、8。这样就不会互相干扰了，并且每个指针循环结束后正好指向的是下一个循环的开始情况，不会存在越界情况。再往中间进一层也是同样的道理，不过需要判断到底有多少层，还有每次进一层的话，顺时针填充的<code>开始索引</code>和<code>结束索引</code>都要向内收缩一格。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking-1253855093.file.myqcloud.com/pics/20220922102236.png"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">generateMatrix</span>(<span class="type">int</span> n) &#123;</span><br><span class="line">        vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">result</span>(n, <span class="built_in">vector</span>&lt;<span class="type">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">        <span class="comment">// loop表示有多少层</span></span><br><span class="line">        <span class="type">int</span> loop = n / <span class="number">2</span>;</span><br><span class="line">        <span class="comment">//每层遍历开始时的x ,y下标(左边界), 每进一层都要+1</span></span><br><span class="line">        <span class="type">int</span> x_start = <span class="number">0</span>, y_start = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//右边界需要收缩的量, 每进一层收缩的量都要+1</span></span><br><span class="line">        <span class="type">int</span> offset = <span class="number">1</span>; </span><br><span class="line">        <span class="comment">//顺时针填充的计数值</span></span><br><span class="line">        <span class="type">int</span> count = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">//每层遍历的x ,y下标  遵循上、右、下、左</span></span><br><span class="line">        <span class="type">int</span> x, y;</span><br><span class="line">        <span class="keyword">while</span>(loop--) &#123;</span><br><span class="line">            x = x_start;</span><br><span class="line">            y = y_start;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">//上的从左到右</span></span><br><span class="line">            <span class="keyword">for</span>(; y &lt; n - offset; y++)&#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右的从上到下</span></span><br><span class="line">            <span class="keyword">for</span>(; x &lt; n - offset; x++) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//下的从右到左</span></span><br><span class="line">            <span class="keyword">for</span>(; y &gt; y_start; y--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//左的从下到上</span></span><br><span class="line">            <span class="keyword">for</span>(; x &gt; x_start; x--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右边界收缩</span></span><br><span class="line">            offset++;</span><br><span class="line">            <span class="comment">//左边界收缩</span></span><br><span class="line">            x_start++;</span><br><span class="line">            y_start++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果层次是奇数，需要额外处理中心数据</span></span><br><span class="line">        <span class="keyword">if</span> (n % <span class="number">2</span>) &#123;</span><br><span class="line">            result[n / <span class="number">2</span>][n / <span class="number">2</span>] = count;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h1 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h1><h2 id="基础动规"><a href="#基础动规" class="headerlink" title="基础动规"></a>基础动规</h2><h3 id="LeetCode509-斐波那契数"><a href="#LeetCode509-斐波那契数" class="headerlink" title="LeetCode509.斐波那契数"></a><a class="link"   href="https://leetcode.cn/problems/fibonacci-number/description/" >LeetCode509.斐波那契数 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_dp_01.png"
+                     
+                ></p>
+<p><em>1.循环解法</em></p>
+<ul>
+<li>题目已经告诉递推公式为： F(n) &#x3D; F(n - 1) + F(n - 2)</li>
+<li>现在只需要初始化数组的前两个元素，后面依次循环即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="type">int</span> dp[<span class="number">31</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">2</span>; i &lt;= n;i++)&#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div>
+<em>2.递归解法</em></li>
+<li>确定递归终点：当F(n)递归到0 or 1时，直接返回。因为F(0) &#x3D; 0, F(1) &#x3D; 1;<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n &lt; <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">fib</span>(n - <span class="number">1</span>) + <span class="built_in">fib</span>(n - <span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h3 id="LeetCode70-爬楼梯"><a href="#LeetCode70-爬楼梯" class="headerlink" title="LeetCode70.爬楼梯"></a><a class="link"   href="https://leetcode.cn/problems/climbing-stairs/description/" >LeetCode70.爬楼梯 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_dp_02.png"
+                     
+                ></p>
+<ul>
+<li>本题和斐波那契数列一样，当前阶f(n)可以从前一阶f(n - 1)和前两阶f(n - 2)达到。定义一个dp数组，记录达到当前阶的方法数量，那么dp[n] &#x3D; dp[n - 1] + dp[n - 2]<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> dp[<span class="number">55</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">climbStairs</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//初始化dp，第一阶和第二阶分别是1和2，表示有一种方法到达第一阶和两种方法到达第二阶</span></span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        dp[<span class="number">2</span>] = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">3</span>; i &lt;= n; i++) &#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>leetcode</tag>
+        <tag>算法</tag>
       </tags>
   </entry>
 </search>
