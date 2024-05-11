@@ -79,6 +79,150 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis缓存</title>
+    <url>/2024/02/11/Redis%E7%BC%93%E5%AD%98/</url>
+    <content><![CDATA[<h2 id="缓存（cache）"><a href="#缓存（cache）" class="headerlink" title="缓存（cache）"></a>缓存（cache）</h2><p>缓存(Cache), 就是数据交换的缓冲区,俗称的缓存就是缓冲区内的数据,一般从数据库中获取,存储于<em>本地代码</em>。</p>
+<h2 id="为什么要使用缓存"><a href="#为什么要使用缓存" class="headerlink" title="为什么要使用缓存"></a>为什么要使用缓存</h2><ul>
+<li>缓存数据存储于代码中,而代码运行在内存中,内存的读写性能远高于磁盘,缓存可以大大降低用户访问并发量带来的服务器读写压力；</li>
+<li>实际开发过程中,企业的数据量,少则几十万,多则几千万,这么大数据量,如果没有缓存来作为”避震器”,系统是几乎撑不住的,所以企业会大量运用到缓存技术;</li>
+<li>但是缓存也会增加代码复杂度和运营的成本</li>
+</ul>
+<h2 id="缓存中的更新策略"><a href="#缓存中的更新策略" class="headerlink" title="缓存中的更新策略"></a>缓存中的更新策略</h2><ul>
+<li>内存淘汰 - Redis 自带的内存淘汰机制</li>
+<li>淘汰过期 - 利用 expire 命令给数据设置过期时间</li>
+<li>主动更新 - 主动完成数据库与缓存的同时更新</li>
+</ul>
+<h3 id="经常使用的更新策略（Cache-Aside）中的三大问题"><a href="#经常使用的更新策略（Cache-Aside）中的三大问题" class="headerlink" title="经常使用的更新策略（Cache Aside）中的三大问题"></a>经常使用的更新策略（Cache Aside）中的三大问题</h3><ul>
+<li>更新缓存还是删除缓存？<ol>
+<li>更新缓存会产生无效更新，并且存在较大的线程安全问题</li>
+<li>删除缓存本质是延迟更新，没有无效更新，线程安全问题相对较低<br><strong>总结：选择删除缓存</strong></li>
+</ol>
+</li>
+<li>先操作数据库还是缓存？<ol>
+<li>先更新数据，再删除缓存 - 在满足原子性的情况下，安全问题概率较低</li>
+<li>先删除缓存，再更新数据库 - 安全问题概率较高<br><strong>总结：先更新数据，再删除缓存</strong></li>
+</ol>
+</li>
+<li>如何确保数据库与缓存操作原子性？<ol>
+<li>单体系统 - 利用事务机制</li>
+<li>分布式系统 - 利用分布式事务机制</li>
+</ol>
+</li>
+</ul>
+<h1 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h1><ul>
+<li>产生原因：在同一时间大量的缓存 key 同时失效或者 Redis 服务器宕机，导致大量的请求到达数据库，带来巨大的压力</li>
+<li>解决方案：<ol>
+<li>给不同的 key 的 TTL 添加随机值</li>
+<li>利用 Redis 集群提高服务的可用性</li>
+<li>给缓存业务添加降级限流策略</li>
+<li>给业务添加多级缓存</li>
+</ol>
+</li>
+</ul>
+<h1 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h1><ul>
+<li>产生原因：客户端请求的数据在缓存中和数据库中都不存在，这样缓存永远不会生效，这些请求都会打到数据库</li>
+<li>解决方案：<ol>
+<li>缓存空对象 - 对于不存在的数据也在 Redis 建立缓存，值为空，并设置一个较短的 TTL 时间<br>优点：实现简单，维护方便<br>缺点：额外的内存消耗，短期的数据不一致问题</li>
+<li>布隆过滤 - 利用布隆过滤算法，在请求进入 Redis 之前先判断是否存在，如果不存在则直接拒绝请求<br>优点：内存占用少<br>缺点：实现复杂，存在误判的可能性</li>
+<li>其他：做好数据的基础格式校验，加强用户权限校验，做好热点参数的限流</li>
+</ol>
+</li>
+</ul>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;R, ID&gt; R <span class="title function_">queryWithPassThrough</span><span class="params">(String keyPrefix, ID id, Class&lt;R&gt; type, Function&lt;ID, R&gt; dbFallBack, Long time, TimeUnit unit)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> keyPrefix + id;</span><br><span class="line">    <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">    <span class="comment">//2.判断是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (StrUtil.isNotBlank(json)) &#123;</span><br><span class="line">        <span class="comment">//3.存在，直接返回</span></span><br><span class="line">        <span class="keyword">return</span> JSONUtil.toBean(json, type);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//判断命中的是否为空值</span></span><br><span class="line">    <span class="keyword">if</span>(json != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">//返回错误信息</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//4.不存在，根据id查找数据库</span></span><br><span class="line">    <span class="type">R</span> <span class="variable">r</span> <span class="operator">=</span> dbFallBack.apply(id);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//5.如果数据库不存在，给这个数据设为空值，添加短暂的TTL</span></span><br><span class="line">    <span class="keyword">if</span> (r == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">//将空值写入redis</span></span><br><span class="line">        stringRedisTemplate.opsForValue().set(key, <span class="string">&quot;&quot;</span>, CACHE_NULL_TTL, TimeUnit.MINUTES);</span><br><span class="line">        <span class="comment">//返回错误</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//6.存在，写入redis</span></span><br><span class="line">    <span class="built_in">this</span>.set(key, r, time, unit);</span><br><span class="line">    <span class="comment">//7.返回</span></span><br><span class="line">    <span class="keyword">return</span> r;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></div>
+
+<h1 id="缓存击穿（热点-key）"><a href="#缓存击穿（热点-key）" class="headerlink" title="缓存击穿（热点 key）"></a>缓存击穿（热点 key）</h1><ul>
+<li><p>产生原因：</p>
+<ol>
+<li>热点 Key 在某一时段被高并发访问</li>
+<li>缓存重建耗时较长<br><em>热点 key 突然过期，因为重建耗时长，在这段时间内大量请求落到数据库，带来巨大冲击</em></li>
+</ol>
+</li>
+<li><p>解决方案</p>
+<ol>
+<li>互斥锁 - 给缓存重建过程加锁，确保重建过程只有一个线程执行，其它线程等待<br>优点：实现简单，没有额外内存消耗，一致性好<br>缺点：等待导致性能下降，有死锁风险</li>
+</ol>
+</li>
+</ul>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//获取锁</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(String key)</span> &#123;</span><br><span class="line">    <span class="type">Boolean</span> <span class="variable">flag</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().setIfAbsent(key, <span class="string">&quot;1&quot;</span>, <span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line">    <span class="keyword">return</span> BooleanUtil.isTrue(flag);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//释放锁</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">(String key)</span> &#123;</span><br><span class="line">    stringRedisTemplate.delete(key);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//互斥锁解决缓存击穿</span></span><br><span class="line"><span class="keyword">public</span> Shop <span class="title function_">queryWithMutex</span><span class="params">(Long id)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> CACHE_SHOP_KEY + id;</span><br><span class="line">    <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">shopJson</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">    <span class="comment">//2.判断是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (StrUtil.isNotBlank(shopJson)) &#123;</span><br><span class="line">        <span class="comment">//3.存在，直接返回</span></span><br><span class="line">        <span class="keyword">return</span> JSONUtil.toBean(shopJson, Shop.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//判断命中的是否是空值</span></span><br><span class="line">    <span class="keyword">if</span>(shopJson != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">//返回错误信息</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//4.实现缓存重建</span></span><br><span class="line">    <span class="comment">//4.1获取互斥锁</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">lockKey</span> <span class="operator">=</span> LOCK_SHOP_KEY;</span><br><span class="line">    <span class="type">Shop</span> <span class="variable">shop</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">boolean</span> <span class="variable">isLock</span> <span class="operator">=</span> tryLock(lockKey);</span><br><span class="line">        <span class="comment">//4.2判断是否获取成功</span></span><br><span class="line">        <span class="keyword">while</span>(!isLock) &#123;</span><br><span class="line">            <span class="comment">//4.3失败，休眠并且重试</span></span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            <span class="keyword">return</span> queryWithMutex(id);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//4.4成功，根据id查找数据库</span></span><br><span class="line">        <span class="comment">//DoubleCheck</span></span><br><span class="line">            <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">            shopJson = stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">            <span class="comment">//2.判断是否存在</span></span><br><span class="line">            <span class="keyword">if</span> (StrUtil.isNotBlank(shopJson)) &#123;</span><br><span class="line">                <span class="comment">//3.存在，直接返回</span></span><br><span class="line">                <span class="keyword">return</span> JSONUtil.toBean(shopJson, Shop.class);</span><br><span class="line">            &#125;</span><br><span class="line">        <span class="comment">//DoubleCheck结束</span></span><br><span class="line"></span><br><span class="line">        shop = getById(id);</span><br><span class="line">        <span class="comment">//模拟重建的延迟</span></span><br><span class="line">        Thread.sleep(<span class="number">200</span>);</span><br><span class="line">        <span class="keyword">if</span> (shop == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="comment">//将空值写入redis</span></span><br><span class="line">            stringRedisTemplate.opsForValue().set(key, <span class="string">&quot;&quot;</span>, CACHE_NULL_TTL, TimeUnit.MINUTES);</span><br><span class="line">            <span class="comment">//5.不存在，返回错误</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//6.存在，写入redis</span></span><br><span class="line">        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">//7.释放互斥锁</span></span><br><span class="line">        unlock(lockKey);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//8.返回</span></span><br><span class="line">    <span class="keyword">return</span> shop;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<ol start="2">
+<li>逻辑过期:<ul>
+<li>热点key缓存永不过期，而是设置一个逻辑过期时间，查询到数据时通过对逻辑过期时间判断，来决定是否需要重建缓存</li>
+<li>重建缓存也通过互斥锁保证单线程执行</li>
+<li>重建缓存利用独立线程异步执行</li>
+<li>其它线程无需等待，直接查询到的旧数据即可<br>优点：线程无需等待，性能较好<br>缺点：短时间不保证一致性，有额外内存消耗，实现复杂</li>
+</ul>
+</li>
+</ol>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//设置线程池</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ExecutorService</span> <span class="variable">CACHE_REBUILD_EXECUTOR</span> <span class="operator">=</span> Executors.newFixedThreadPool(<span class="number">10</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//逻辑过期解决缓存击穿</span></span><br><span class="line"><span class="keyword">public</span> &lt;R, ID&gt; R <span class="title function_">queryWithLogicalExpire</span><span class="params">(String keyPrefix, ID id, Class&lt;R&gt; type, Function&lt;ID, R&gt; dbFallBack, Long time, TimeUnit unit)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> keyPrefix + id;</span><br><span class="line">    <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">    <span class="comment">//2.判断是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (StrUtil.isBlank(json)) &#123;</span><br><span class="line">        <span class="comment">//3.不存在，直接返回</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//4.命中，需要先把json反序列化为对象</span></span><br><span class="line">    <span class="type">RedisData</span> <span class="variable">redisData</span> <span class="operator">=</span> JSONUtil.toBean(json, RedisData.class);</span><br><span class="line">    <span class="type">JSONObject</span> <span class="variable">data</span> <span class="operator">=</span> (JSONObject) redisData.getData();</span><br><span class="line">    <span class="type">R</span> <span class="variable">r</span> <span class="operator">=</span> JSONUtil.toBean(data, type);</span><br><span class="line">    <span class="type">LocalDateTime</span> <span class="variable">expireTime</span> <span class="operator">=</span> redisData.getExpireTime();</span><br><span class="line">    <span class="comment">//5.判断是否过期</span></span><br><span class="line">    <span class="keyword">if</span> (expireTime.isAfter(LocalDateTime.now())) &#123;</span><br><span class="line">        <span class="comment">//5.1未过期， 直接返回店铺信息</span></span><br><span class="line">        <span class="keyword">return</span> r;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//5.2已过期，需要缓存重建</span></span><br><span class="line">    <span class="comment">//6.缓存重建</span></span><br><span class="line">    <span class="comment">//6.1获取互斥锁</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">lockKey</span> <span class="operator">=</span> LOCK_SHOP_KEY;</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">isLock</span> <span class="operator">=</span> tryLock(lockKey);</span><br><span class="line">    <span class="comment">//6.2判断是否获取锁成功</span></span><br><span class="line">    <span class="keyword">if</span>(isLock)&#123;</span><br><span class="line">        <span class="comment">// TODO 6.3成功，开启独立线程，实现缓存重建</span></span><br><span class="line">        <span class="comment">//DoubleCheck</span></span><br><span class="line">        <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">shopJson2</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">        <span class="comment">//2.判断是否存在</span></span><br><span class="line">        <span class="keyword">if</span> (!r.equals(shopJson2)) &#123;</span><br><span class="line">            <span class="comment">//3.存在，直接返回</span></span><br><span class="line">            <span class="keyword">return</span> JSONUtil.toBean(shopJson2, type);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//DoubleCheck</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">//开启新线程</span></span><br><span class="line">        CACHE_REBUILD_EXECUTOR.submit(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//重建缓存</span></span><br><span class="line">                <span class="comment">//1.查询数据库</span></span><br><span class="line">                <span class="type">R</span> <span class="variable">r1</span> <span class="operator">=</span> dbFallBack.apply(id);</span><br><span class="line">                <span class="comment">//2.写入缓存</span></span><br><span class="line">                <span class="built_in">this</span>.setLogicalExpire(key, r1, time, unit);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                <span class="comment">//释放锁</span></span><br><span class="line">                unlock(lockKey);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//7.返回</span></span><br><span class="line">    <span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
+      <tags>
+        <tag>redis</tag>
+        <tag>spring boot</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Saas短链接(项目)</title>
+    <url>/2024/03/28/Saas%E7%9F%AD%E9%93%BE%E6%8E%A5/</url>
+    <content><![CDATA[<h1 id="用户模块"><a href="#用户模块" class="headerlink" title="用户模块"></a>用户模块</h1><h2 id="用户敏感信息脱敏（手机号）"><a href="#用户敏感信息脱敏（手机号）" class="headerlink" title="用户敏感信息脱敏（手机号）"></a>用户敏感信息脱敏（手机号）</h2><ul>
+<li>创建一个手机序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 手机号脱敏反序列化</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PhoneDesensitizationSerializer</span> <span class="keyword">extends</span> <span class="title class_">JsonSerializer</span>&lt;String&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">serialize</span><span class="params">(String phone, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">phoneDesensitization</span> <span class="operator">=</span> DesensitizedUtil.mobilePhone(phone);</span><br><span class="line">        jsonGenerator.writeString(phoneDesensitization);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
+<li>在敏感字段上加自定义序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserRespDTO</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * id</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用户名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 真实姓名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String realName;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 手机号</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@JsonSerialize(using = PhoneDesensitizationSerializer.class)</span></span><br><span class="line">    <span class="keyword">private</span> String phone;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 邮箱</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String mail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h2><h3 id="使用布隆过滤器"><a href="#使用布隆过滤器" class="headerlink" title="使用布隆过滤器"></a>使用布隆过滤器</h3><ul>
+<li>为了防止缓存击穿直接打到数据库，可以采用布隆过滤器</li>
+</ul>
+<p><strong>引入依赖</strong></p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<p><strong>配置Redis</strong></p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">data:</span></span><br><span class="line">    <span class="attr">redis:</span></span><br><span class="line">      <span class="attr">host:</span> <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">6379</span></span><br><span class="line">      <span class="attr">password:</span> <span class="string">root</span></span><br></pre></td></tr></table></figure></div>
+<p><strong>创建布隆过滤器实体</strong></p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RBloomFilterConfiguration</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 防止用户注册查询数据库的布隆过滤器</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RBloomFilter&lt;String&gt; <span class="title function_">userRegisterCachePenetrationBloomFilter</span><span class="params">(RedissonClient redissonClient)</span> &#123;</span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redissonClient.getBloomFilter(<span class="string">&quot;userRegisterCachePenetrationBloomFilter&quot;</span>);</span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000</span>, <span class="number">0.001</span>); <span class="comment">//布隆过滤器中的大小， 误判率</span></span><br><span class="line">        <span class="keyword">return</span> bloomFilter;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>使用</strong></p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注入</span></span><br><span class="line"><span class="meta">@Resource</span></span><br><span class="line"><span class="keyword">private</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line"><span class="comment">//调用方法</span></span><br><span class="line">userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
+<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><h4 id="如何防止用户名重复？"><a href="#如何防止用户名重复？" class="headerlink" title="如何防止用户名重复？"></a>如何防止用户名重复？</h4><ul>
+<li>通过布隆过滤器把所有用户名进行加载。这样该功能就能完全隔离数据库。<br>数据库层面添加唯一索引。</li>
+</ul>
+<h4 id="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"><a href="#如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？" class="headerlink" title="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"></a>如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？</h4><p>因为用户名没注册，所以布隆过滤器不存在，代表着可以触发注册流程插入数据库。但是如果恶意请求短时间海量请求，这些请求都会落到数据库，造成数据库访问压力。这里通过分布式锁，锁定用户名进行串行执行，防止恶意请求利用未注册用户名将请求打到数据库。</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">        <span class="comment">//存在</span></span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">            <span class="comment">//获取锁成功</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">            <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">            &#125;</span><br><span class="line">            userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/saas_01.png"
+                     
+                ></p>
+<h2 id="自动填充字段"><a href="#自动填充字段" class="headerlink" title="自动填充字段"></a>自动填充字段</h2><h3 id="Mybatis-Plus自动填充"><a href="#Mybatis-Plus自动填充" class="headerlink" title="Mybatis-Plus自动填充"></a>Mybatis-Plus自动填充</h3><ul>
+<li>在例如create_time, update_time等字段中，在插入、更新操作中需要填充该字段，可以利用<a class="link"   href="https://baomidou.com/pages/4c6bcf/" >MP(mybatis-plus) <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中提供的方法<br><strong>1.实现元对象处理接口</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注册为Bean对象，交给Spring容器管理</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyMetaObjectHandler</span> <span class="keyword">implements</span> <span class="title class_">MetaObjectHandler</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;createTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;delFlag&quot;</span>, () -&gt; <span class="number">0</span>, Integer.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<strong>2.注解填充字段</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Date createTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 修改时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT_UPDATE)</span></span><br><span class="line"><span class="keyword">private</span> Date updateTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 删除标识 0：未删除 1：已删除</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Integer delFlag;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="分库分表"><a href="#分库分表" class="headerlink" title="分库分表"></a>分库分表</h2><h3 id="数据库分库分表框架-ShardingSphere"><a href="#数据库分库分表框架-ShardingSphere" class="headerlink" title="数据库分库分表框架 ShardingSphere"></a>数据库分库分表框架 ShardingSphere</h3><p><strong>引入依赖</strong></p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.shardingsphere<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>shardingsphere-jdbc-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.3.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<p><strong>定义分片规则</strong></p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">datasource:</span></span><br><span class="line">  	<span class="comment"># ShardingSphere 对 Driver 自定义，实现分库分表等隐藏逻辑</span></span><br><span class="line">    <span class="attr">driver-class-name:</span> <span class="string">org.apache.shardingsphere.driver.ShardingSphereDriver</span></span><br><span class="line">    <span class="comment"># ShardingSphere 配置文件路径</span></span><br><span class="line">    <span class="attr">url:</span> <span class="string">jdbc:shardingsphere:classpath:shardingsphere-config.yaml</span></span><br></pre></td></tr></table></figure></div>
+<p><strong>shardingsphere-config.yaml</strong></p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 数据源集合</span></span><br><span class="line"><span class="attr">dataSources:</span></span><br><span class="line">  <span class="attr">ds_0:</span></span><br><span class="line">    <span class="attr">dataSourceClassName:</span> <span class="string">com.zaxxer.hikari.HikariDataSource</span></span><br><span class="line">    <span class="attr">driverClassName:</span> <span class="string">com.mysql.cj.jdbc.Driver</span></span><br><span class="line">    <span class="attr">jdbcUrl:</span> <span class="string">jdbc:mysql://127.0.0.1:3306/link?useUnicode=true&amp;characterEncoding=UTF-8&amp;rewriteBatchedStatements=true&amp;allowMultiQueries=true&amp;serverTimezone=Asia/Shanghai</span></span><br><span class="line">    <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">password:</span> <span class="string">root</span></span><br><span class="line"></span><br><span class="line"><span class="attr">rules:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="type">!SHARDING</span></span><br><span class="line">    <span class="attr">tables:</span></span><br><span class="line">      <span class="attr">t_user:</span></span><br><span class="line">        <span class="comment"># 真实数据节点，比如数据库源以及数据库在数据库中真实存在的</span></span><br><span class="line">        <span class="attr">actualDataNodes:</span> <span class="string">ds_0.t_user_$&#123;0..15&#125;</span></span><br><span class="line">        <span class="comment"># 分表策略</span></span><br><span class="line">        <span class="attr">tableStrategy:</span></span><br><span class="line">          <span class="comment"># 用于单分片键的标准分片场景</span></span><br><span class="line">          <span class="attr">standard:</span></span><br><span class="line">            <span class="comment"># 分片键</span></span><br><span class="line">            <span class="attr">shardingColumn:</span> <span class="string">username</span></span><br><span class="line">            <span class="comment"># 分片算法，对应 rules[0].shardingAlgorithms</span></span><br><span class="line">            <span class="attr">shardingAlgorithmName:</span> <span class="string">user_table_hash_mod</span></span><br><span class="line">    <span class="comment"># 分片算法</span></span><br><span class="line">    <span class="attr">shardingAlgorithms:</span></span><br><span class="line">      <span class="comment"># 数据表分片算法</span></span><br><span class="line">      <span class="attr">user_table_hash_mod:</span></span><br><span class="line">        <span class="comment"># 根据分片键 Hash 分片</span></span><br><span class="line">        <span class="attr">type:</span> <span class="string">HASH_MOD</span></span><br><span class="line">        <span class="comment"># 分片数量</span></span><br><span class="line">        <span class="attr">props:</span></span><br><span class="line">          <span class="attr">sharding-count:</span> <span class="number">16</span></span><br><span class="line"><span class="comment"># 展现逻辑 SQL &amp; 真实 SQL</span></span><br><span class="line"><span class="attr">props:</span></span><br><span class="line">  <span class="attr">sql-show:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure></div>
+<h2 id="userService业务代码"><a href="#userService业务代码" class="headerlink" title="userService业务代码"></a>userService业务代码</h2><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 用户接口实现层</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="meta">@RequiredArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserServiceImpl</span> <span class="keyword">extends</span> <span class="title class_">ServiceImpl</span>&lt;UserMapper, UserDO&gt; <span class="keyword">implements</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RedissonClient redissonClient;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserRespDTO <span class="title function_">getUserByUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; queryWrapper = Wrappers.lambdaQuery(UserDO.class).eq(UserDO::getUsername, username);</span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">userDO</span> <span class="operator">=</span> baseMapper.selectOne(queryWrapper);</span><br><span class="line">        <span class="keyword">if</span> (userDO == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(UserErrorCode.USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">UserRespDTO</span> <span class="variable">result</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserRespDTO</span>();</span><br><span class="line">        BeanUtils.copyProperties(userDO, result);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">hashUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> userRegisterCachePenetrationBloomFilter.contains(username);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">            <span class="comment">//存在</span></span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">                <span class="comment">//获取锁成功</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">                <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">                &#125;</span><br><span class="line">                userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">(UserUpdateReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="comment">//TODO 验证修改用户是不是当前用户</span></span><br><span class="line">        LambdaUpdateWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaUpdate(UserDO.class).eq(UserDO::getUsername, requestParam.getUsername());</span><br><span class="line">        baseMapper.update(BeanUtil.toBean(requestParam, UserDO.class), wrapper);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserLoginRespDTO <span class="title function_">login</span><span class="params">(UserLoginReqDTO requestParam)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaQuery(UserDO.class)</span><br><span class="line">                .eq(UserDO::getUsername, requestParam.getUsername())</span><br><span class="line">                .eq(UserDO::getPassword, requestParam.getPassword())</span><br><span class="line">                .eq(UserDO::getDelFlag, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">result</span> <span class="operator">=</span> baseMapper.selectOne(wrapper);</span><br><span class="line">        System.out.println(result);</span><br><span class="line">        <span class="keyword">if</span>(result == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.hasKey(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">if</span>(BooleanUtil.isTrue(hasLogin)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_LOGIN_ERROR);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Hash</span></span><br><span class="line"><span class="comment">         * Key: 用户名</span></span><br><span class="line"><span class="comment">         * Value:</span></span><br><span class="line"><span class="comment">         *  key: token 用户凭证</span></span><br><span class="line"><span class="comment">         *  val: Json 字符串（用户信息）</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> UUID.randomUUID().toString();</span><br><span class="line">        stringRedisTemplate.opsForHash().put(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), token, JSON.toJSONString(result));</span><br><span class="line">        stringRedisTemplate.expire(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), Duration.ofMinutes(<span class="number">30L</span>));</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">UserLoginRespDTO</span>(token);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">checkLogin</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.opsForHash().hasKey(<span class="string">&quot;login_&quot;</span> + username, token);</span><br><span class="line">        <span class="keyword">return</span> BooleanUtil.isTrue(hasLogin);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">logout</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(checkLogin(username, token)) &#123;</span><br><span class="line">            stringRedisTemplate.delete(<span class="string">&quot;login_&quot;</span> + username);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(<span class="string">&quot;用户未登录或token异常&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+
+
+
+
+
+]]></content>
+      <tags>
+        <tag>Saas项目</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spring Cloud-Eureka篇(注册中心)</title>
     <url>/2024/03/12/Spring-Cloud-Eureka%E7%AF%87/</url>
     <content><![CDATA[<h2 id="Eureka-的作用"><a href="#Eureka-的作用" class="headerlink" title="Eureka 的作用"></a>Eureka 的作用</h2><ul>
@@ -137,59 +281,6 @@
       <tags>
         <tag>Spring Cloud</tag>
         <tag>Eureka</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Saas短链接(项目)</title>
-    <url>/2024/03/28/Saas%E7%9F%AD%E9%93%BE%E6%8E%A5/</url>
-    <content><![CDATA[<h1 id="用户模块"><a href="#用户模块" class="headerlink" title="用户模块"></a>用户模块</h1><h2 id="用户敏感信息脱敏（手机号）"><a href="#用户敏感信息脱敏（手机号）" class="headerlink" title="用户敏感信息脱敏（手机号）"></a>用户敏感信息脱敏（手机号）</h2><ul>
-<li>创建一个手机序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 手机号脱敏反序列化</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PhoneDesensitizationSerializer</span> <span class="keyword">extends</span> <span class="title class_">JsonSerializer</span>&lt;String&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">serialize</span><span class="params">(String phone, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">phoneDesensitization</span> <span class="operator">=</span> DesensitizedUtil.mobilePhone(phone);</span><br><span class="line">        jsonGenerator.writeString(phoneDesensitization);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
-<li>在敏感字段上加自定义序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserRespDTO</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * id</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用户名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 真实姓名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String realName;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 手机号</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@JsonSerialize(using = PhoneDesensitizationSerializer.class)</span></span><br><span class="line">    <span class="keyword">private</span> String phone;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 邮箱</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String mail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h2><h3 id="使用布隆过滤器"><a href="#使用布隆过滤器" class="headerlink" title="使用布隆过滤器"></a>使用布隆过滤器</h3><ul>
-<li>为了防止缓存击穿直接打到数据库，可以采用布隆过滤器</li>
-</ul>
-<p><strong>引入依赖</strong></p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<p><strong>配置Redis</strong></p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">data:</span></span><br><span class="line">    <span class="attr">redis:</span></span><br><span class="line">      <span class="attr">host:</span> <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">6379</span></span><br><span class="line">      <span class="attr">password:</span> <span class="string">root</span></span><br></pre></td></tr></table></figure></div>
-<p><strong>创建布隆过滤器实体</strong></p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RBloomFilterConfiguration</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 防止用户注册查询数据库的布隆过滤器</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RBloomFilter&lt;String&gt; <span class="title function_">userRegisterCachePenetrationBloomFilter</span><span class="params">(RedissonClient redissonClient)</span> &#123;</span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redissonClient.getBloomFilter(<span class="string">&quot;userRegisterCachePenetrationBloomFilter&quot;</span>);</span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000</span>, <span class="number">0.001</span>); <span class="comment">//布隆过滤器中的大小， 误判率</span></span><br><span class="line">        <span class="keyword">return</span> bloomFilter;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-<p><strong>使用</strong></p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注入</span></span><br><span class="line"><span class="meta">@Resource</span></span><br><span class="line"><span class="keyword">private</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line"><span class="comment">//调用方法</span></span><br><span class="line">userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
-<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><h4 id="如何防止用户名重复？"><a href="#如何防止用户名重复？" class="headerlink" title="如何防止用户名重复？"></a>如何防止用户名重复？</h4><ul>
-<li>通过布隆过滤器把所有用户名进行加载。这样该功能就能完全隔离数据库。<br>数据库层面添加唯一索引。</li>
-</ul>
-<h4 id="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"><a href="#如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？" class="headerlink" title="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"></a>如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？</h4><p>因为用户名没注册，所以布隆过滤器不存在，代表着可以触发注册流程插入数据库。但是如果恶意请求短时间海量请求，这些请求都会落到数据库，造成数据库访问压力。这里通过分布式锁，锁定用户名进行串行执行，防止恶意请求利用未注册用户名将请求打到数据库。</p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">        <span class="comment">//存在</span></span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">            <span class="comment">//获取锁成功</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">            <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">            &#125;</span><br><span class="line">            userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/saas_01.png"
-                     
-                ></p>
-<h2 id="自动填充字段"><a href="#自动填充字段" class="headerlink" title="自动填充字段"></a>自动填充字段</h2><h3 id="Mybatis-Plus自动填充"><a href="#Mybatis-Plus自动填充" class="headerlink" title="Mybatis-Plus自动填充"></a>Mybatis-Plus自动填充</h3><ul>
-<li>在例如create_time, update_time等字段中，在插入、更新操作中需要填充该字段，可以利用<a class="link"   href="https://baomidou.com/pages/4c6bcf/" >MP(mybatis-plus) <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中提供的方法<br><strong>1.实现元对象处理接口</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注册为Bean对象，交给Spring容器管理</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyMetaObjectHandler</span> <span class="keyword">implements</span> <span class="title class_">MetaObjectHandler</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;createTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;delFlag&quot;</span>, () -&gt; <span class="number">0</span>, Integer.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<strong>2.注解填充字段</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Date createTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 修改时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT_UPDATE)</span></span><br><span class="line"><span class="keyword">private</span> Date updateTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 删除标识 0：未删除 1：已删除</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Integer delFlag;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="分库分表"><a href="#分库分表" class="headerlink" title="分库分表"></a>分库分表</h2><h3 id="数据库分库分表框架-ShardingSphere"><a href="#数据库分库分表框架-ShardingSphere" class="headerlink" title="数据库分库分表框架 ShardingSphere"></a>数据库分库分表框架 ShardingSphere</h3><p><strong>引入依赖</strong></p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.shardingsphere<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>shardingsphere-jdbc-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.3.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-<p><strong>定义分片规则</strong></p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">datasource:</span></span><br><span class="line">  	<span class="comment"># ShardingSphere 对 Driver 自定义，实现分库分表等隐藏逻辑</span></span><br><span class="line">    <span class="attr">driver-class-name:</span> <span class="string">org.apache.shardingsphere.driver.ShardingSphereDriver</span></span><br><span class="line">    <span class="comment"># ShardingSphere 配置文件路径</span></span><br><span class="line">    <span class="attr">url:</span> <span class="string">jdbc:shardingsphere:classpath:shardingsphere-config.yaml</span></span><br></pre></td></tr></table></figure></div>
-<p><strong>shardingsphere-config.yaml</strong></p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 数据源集合</span></span><br><span class="line"><span class="attr">dataSources:</span></span><br><span class="line">  <span class="attr">ds_0:</span></span><br><span class="line">    <span class="attr">dataSourceClassName:</span> <span class="string">com.zaxxer.hikari.HikariDataSource</span></span><br><span class="line">    <span class="attr">driverClassName:</span> <span class="string">com.mysql.cj.jdbc.Driver</span></span><br><span class="line">    <span class="attr">jdbcUrl:</span> <span class="string">jdbc:mysql://127.0.0.1:3306/link?useUnicode=true&amp;characterEncoding=UTF-8&amp;rewriteBatchedStatements=true&amp;allowMultiQueries=true&amp;serverTimezone=Asia/Shanghai</span></span><br><span class="line">    <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">password:</span> <span class="string">root</span></span><br><span class="line"></span><br><span class="line"><span class="attr">rules:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="type">!SHARDING</span></span><br><span class="line">    <span class="attr">tables:</span></span><br><span class="line">      <span class="attr">t_user:</span></span><br><span class="line">        <span class="comment"># 真实数据节点，比如数据库源以及数据库在数据库中真实存在的</span></span><br><span class="line">        <span class="attr">actualDataNodes:</span> <span class="string">ds_0.t_user_$&#123;0..15&#125;</span></span><br><span class="line">        <span class="comment"># 分表策略</span></span><br><span class="line">        <span class="attr">tableStrategy:</span></span><br><span class="line">          <span class="comment"># 用于单分片键的标准分片场景</span></span><br><span class="line">          <span class="attr">standard:</span></span><br><span class="line">            <span class="comment"># 分片键</span></span><br><span class="line">            <span class="attr">shardingColumn:</span> <span class="string">username</span></span><br><span class="line">            <span class="comment"># 分片算法，对应 rules[0].shardingAlgorithms</span></span><br><span class="line">            <span class="attr">shardingAlgorithmName:</span> <span class="string">user_table_hash_mod</span></span><br><span class="line">    <span class="comment"># 分片算法</span></span><br><span class="line">    <span class="attr">shardingAlgorithms:</span></span><br><span class="line">      <span class="comment"># 数据表分片算法</span></span><br><span class="line">      <span class="attr">user_table_hash_mod:</span></span><br><span class="line">        <span class="comment"># 根据分片键 Hash 分片</span></span><br><span class="line">        <span class="attr">type:</span> <span class="string">HASH_MOD</span></span><br><span class="line">        <span class="comment"># 分片数量</span></span><br><span class="line">        <span class="attr">props:</span></span><br><span class="line">          <span class="attr">sharding-count:</span> <span class="number">16</span></span><br><span class="line"><span class="comment"># 展现逻辑 SQL &amp; 真实 SQL</span></span><br><span class="line"><span class="attr">props:</span></span><br><span class="line">  <span class="attr">sql-show:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure></div>
-<h2 id="userService业务代码"><a href="#userService业务代码" class="headerlink" title="userService业务代码"></a>userService业务代码</h2><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 用户接口实现层</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="meta">@RequiredArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserServiceImpl</span> <span class="keyword">extends</span> <span class="title class_">ServiceImpl</span>&lt;UserMapper, UserDO&gt; <span class="keyword">implements</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RedissonClient redissonClient;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserRespDTO <span class="title function_">getUserByUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; queryWrapper = Wrappers.lambdaQuery(UserDO.class).eq(UserDO::getUsername, username);</span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">userDO</span> <span class="operator">=</span> baseMapper.selectOne(queryWrapper);</span><br><span class="line">        <span class="keyword">if</span> (userDO == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(UserErrorCode.USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">UserRespDTO</span> <span class="variable">result</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserRespDTO</span>();</span><br><span class="line">        BeanUtils.copyProperties(userDO, result);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">hashUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> userRegisterCachePenetrationBloomFilter.contains(username);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">            <span class="comment">//存在</span></span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">                <span class="comment">//获取锁成功</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">                <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">                &#125;</span><br><span class="line">                userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">(UserUpdateReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="comment">//TODO 验证修改用户是不是当前用户</span></span><br><span class="line">        LambdaUpdateWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaUpdate(UserDO.class).eq(UserDO::getUsername, requestParam.getUsername());</span><br><span class="line">        baseMapper.update(BeanUtil.toBean(requestParam, UserDO.class), wrapper);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserLoginRespDTO <span class="title function_">login</span><span class="params">(UserLoginReqDTO requestParam)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaQuery(UserDO.class)</span><br><span class="line">                .eq(UserDO::getUsername, requestParam.getUsername())</span><br><span class="line">                .eq(UserDO::getPassword, requestParam.getPassword())</span><br><span class="line">                .eq(UserDO::getDelFlag, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">result</span> <span class="operator">=</span> baseMapper.selectOne(wrapper);</span><br><span class="line">        System.out.println(result);</span><br><span class="line">        <span class="keyword">if</span>(result == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.hasKey(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">if</span>(BooleanUtil.isTrue(hasLogin)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_LOGIN_ERROR);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Hash</span></span><br><span class="line"><span class="comment">         * Key: 用户名</span></span><br><span class="line"><span class="comment">         * Value:</span></span><br><span class="line"><span class="comment">         *  key: token 用户凭证</span></span><br><span class="line"><span class="comment">         *  val: Json 字符串（用户信息）</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> UUID.randomUUID().toString();</span><br><span class="line">        stringRedisTemplate.opsForHash().put(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), token, JSON.toJSONString(result));</span><br><span class="line">        stringRedisTemplate.expire(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), Duration.ofMinutes(<span class="number">30L</span>));</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">UserLoginRespDTO</span>(token);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">checkLogin</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.opsForHash().hasKey(<span class="string">&quot;login_&quot;</span> + username, token);</span><br><span class="line">        <span class="keyword">return</span> BooleanUtil.isTrue(hasLogin);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">logout</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(checkLogin(username, token)) &#123;</span><br><span class="line">            stringRedisTemplate.delete(<span class="string">&quot;login_&quot;</span> + username);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(<span class="string">&quot;用户未登录或token异常&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-
-
-
-
-
-]]></content>
-      <tags>
-        <tag>Saas项目</tag>
       </tags>
   </entry>
   <entry>
@@ -366,234 +457,6 @@
       <tags>
         <tag>Spring Cloud</tag>
         <tag>Feign</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring Cloud-Nacos篇(注册中心)</title>
-    <url>/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
-    <content><![CDATA[<h2 id="认识-Nacos"><a href="#认识-Nacos" class="headerlink" title="认识 Nacos"></a>认识 Nacos</h2><p><a class="link"   href="https://nacos.io/" >Nacos <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>是阿里巴巴的产品，现在是<a class="link"   href="https://spring.io/projects/spring-cloud" >SpringCloud <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中的一个组件。相比<a class="link"   href="https://github.com/Netflix/eureka" >Eureka <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>功能更加丰富，在国内受欢迎程度较高。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_01.png"
-                      alt="nacos"
-                ></p>
-<h2 id="服务注册到-nacos"><a href="#服务注册到-nacos" class="headerlink" title="服务注册到 nacos"></a>服务注册到 nacos</h2><p>Nacos 是 SpringCloudAlibaba 的组件，而 SpringCloudAlibaba 也遵循 SpringCloud 中定义的服务注册、服务发现规范。因此使用 Nacos 和使用 Eureka 对于微服务来说，并没有太大区别。</p>
-<h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>在 cloud-demo 父工程的 pom 文件中的<code>&lt;dependencyManagement&gt;</code>中引入 SpringCloudAlibaba 的依赖：</p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-alibaba-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.2.6.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<p>然后在 user-service 和 order-service 中的 pom 文件中引入 nacos-discovery 依赖：</p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-discovery<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<h3 id="配置-nacos-地址"><a href="#配置-nacos-地址" class="headerlink" title="配置 nacos 地址"></a>配置 nacos 地址</h3><p>在 user-service 和 order-service 的 application.yml 中添加 nacos 地址：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br></pre></td></tr></table></figure></div>
-
-<h3 id="重启"><a href="#重启" class="headerlink" title="重启"></a>重启</h3><p>重启微服务后，登录 nacos 管理页面，可以看到微服务信息：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_02.png"
-                      alt="nacos"
-                ></p>
-<h2 id="服务分级存储模型"><a href="#服务分级存储模型" class="headerlink" title="服务分级存储模型"></a>服务分级存储模型</h2><p>一个服务可以包含多个集群，如杭州、上海，每个集群下可以有多个实例，形成分级模型，如图：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_03.png"
-                      alt="cluster"
-                ><br>微服务互相访问时，应该尽可能访问同集群实例，因为本地访问速度更快。当本集群内不可用时，才访问其它集群。</p>
-<h3 id="给-user-service-配置集群"><a href="#给-user-service-配置集群" class="headerlink" title="给 user-service 配置集群"></a>给 user-service 配置集群</h3><div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
-
-<h3 id="同集群优先的负载均衡"><a href="#同集群优先的负载均衡" class="headerlink" title="同集群优先的负载均衡"></a>同集群优先的负载均衡</h3><p>默认的<code>ZoneAvoidanceRule</code>并不能实现根据同集群优先来实现负载均衡。</p>
-<p>因此 Nacos 中提供了一个<code>NacosRule</code>的实现，可以优先从同集群中挑选实例。<br>1）给 order-service 配置集群信息<br>修改 order-service 的 application.yml 文件，添加集群配置：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
-
-<p>2）修改负载均衡规则<br>修改 order-service 的 application.yml 文件，修改负载均衡规则：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.alibaba.cloud.nacos.ribbon.NacosRule</span> <span class="comment"># 负载均衡规则</span></span><br></pre></td></tr></table></figure></div>
-
-<h2 id="权重配置"><a href="#权重配置" class="headerlink" title="权重配置"></a>权重配置</h2><p>实际部署中会出现这样的场景：</p>
-<p>服务器设备性能有差异，部分实例所在机器性能较好，另一些较差，我们希望性能好的机器承担更多的用户请求。<br>在 nacos 控制台，找到 user-service 的实例列表，点击编辑，即可修改权重：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_04.png"
-                      alt="loadBalance"
-                ></p>
-<h2 id="环境隔离"><a href="#环境隔离" class="headerlink" title="环境隔离"></a>环境隔离</h2><p>Nacos 提供了 namespace 来实现环境隔离功能。</p>
-<ul>
-<li>nacos 中可以有多个 namespace</li>
-<li>namespace 下可以有 group、service 等</li>
-<li>不同 namespace 之间相互隔离，例如不同 namespace 的服务互相不可见<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_05.png"
-                      alt="namespace"
-                ></li>
-</ul>
-<h3 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h3><p>默认情况下，所有 service、data、group 都在同一个 namespace，名为 public：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_06.png"
-                      alt="namespace"
-                ><br>我们可以点击页面新增按钮，添加一个 namespace：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_07.png"
-                      alt="namespace"
-                ><br>然后，填写表单：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_08.png"
-                      alt="namespace"
-                ><br>就能在页面看到一个新的 namespace：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_09.png"
-                      alt="namespace"
-                ></p>
-<h3 id="给微服务配置-namespace"><a href="#给微服务配置-namespace" class="headerlink" title="给微服务配置 namespace"></a>给微服务配置 namespace</h3><p>给微服务配置 namespace 只能通过修改配置来实现。</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span></span><br><span class="line">        <span class="attr">namespace:</span> <span class="string">492a7d5d-237b-46a1-a99a-fa8e98e4b0f9</span> <span class="comment"># 命名空间，填ID</span></span><br></pre></td></tr></table></figure></div>
-
-<h2 id="Nacos-与-Eureka-的区别"><a href="#Nacos-与-Eureka-的区别" class="headerlink" title="Nacos 与 Eureka 的区别"></a>Nacos 与 Eureka 的区别</h2><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_10.png"
-                      alt="namespace"
-                ></p>
-<ul>
-<li><p>Nacos 与 eureka 的共同点</p>
-<ul>
-<li>都支持服务注册和服务拉取</li>
-<li>都支持服务提供者心跳方式做健康检测</li>
-</ul>
-</li>
-<li><p>Nacos 与 Eureka 的区别</p>
-<ul>
-<li>Nacos 支持服务端主动检测提供者状态：临时实例采用心跳模式，非临时实例采用主动检测模式</li>
-<li>临时实例心跳不正常会被剔除，非临时实例则不会被剔除</li>
-<li>Nacos 支持服务列表变更的消息推送模式，服务列表更新更及时</li>
-<li>Nacos 集群默认采用 AP 方式，当集群中存在非临时实例时，采用 CP 模式；Eureka 采用 AP 方式</li>
-</ul>
-</li>
-</ul>
-<h2 id="Nacos-配置管理"><a href="#Nacos-配置管理" class="headerlink" title="Nacos 配置管理"></a>Nacos 配置管理</h2><h3 id="统一配置管理"><a href="#统一配置管理" class="headerlink" title="统一配置管理"></a>统一配置管理</h3><p>当微服务部署的实例越来越多，达到数十、数百时，逐个修改微服务配置就会让人抓狂，而且很容易出错。我们需要一种统一配置管理方案，可以集中管理所有实例的配置。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_11.png"
-                      alt="config"
-                ></p>
-<h4 id="在-nacos-中添加配置文件"><a href="#在-nacos-中添加配置文件" class="headerlink" title="在 nacos 中添加配置文件"></a>在 nacos 中添加配置文件</h4><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_12.png"
-                      alt="config"
-                ><br>然后在弹出的表单中，填写配置信息：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_13.png"
-                      alt="config"
-                ><br><em>注意：项目的核心配置，需要热更新的配置才有放到 nacos 管理的必要。基本不会变更的一些配置还是保存在微服务本地比较好。</em></p>
-<h4 id="从微服务拉取配置"><a href="#从微服务拉取配置" class="headerlink" title="从微服务拉取配置"></a>从微服务拉取配置</h4><p>微服务要拉取 nacos 中管理的配置，并且与本地的 application.yml 配置合并，才能完成项目启动。</p>
-<p>但如果尚未读取 application.yml，又如何得知 nacos 地址呢？</p>
-<p>因此 spring 引入了一种新的配置文件：bootstrap.yaml 文件，会在 application.yml 之前被读取，流程如下：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_14.png"
-                      alt="config"
-                ><br>1）引入 nacos-config 依赖</p>
-<p>首先，在 user-service 服务中，引入 nacos-config 的客户端依赖：</p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--nacos配置管理依赖--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<p>2）添加 bootstrap.yaml</p>
-<p>然后，在 user-service 中添加一个 bootstrap.yaml 文件，内容如下：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">userservice</span> <span class="comment"># 服务名称</span></span><br><span class="line">  <span class="attr">profiles:</span></span><br><span class="line">    <span class="attr">active:</span> <span class="string">dev</span> <span class="comment">#开发环境，这里是dev</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span> <span class="comment"># Nacos地址</span></span><br><span class="line">      <span class="attr">config:</span></span><br><span class="line">        <span class="attr">file-extension:</span> <span class="string">yaml</span> <span class="comment"># 文件后缀名</span></span><br></pre></td></tr></table></figure></div>
-
-<p>本例中，就是去读取<code>userservice-dev.yaml</code>：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_15.png"
-                      alt="config"
-                ><br>3）读取 nacos 配置</p>
-<p>在 user-service 中的 UserController 中添加业务逻辑，读取 pattern.dateformat 配置：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_16.png"
-                      alt="config"
-                ><br>在页面访问，可以看到效果：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_17.png"
-                      alt="config"
-                ></p>
-<h3 id="配置热更新"><a href="#配置热更新" class="headerlink" title="配置热更新"></a>配置热更新</h3><p>我们最终的目的，是修改 nacos 中的配置后，微服务中无需重启即可让配置生效，也就是<strong>配置热更新</strong>。</p>
-<p>要实现配置热更新，可以使用两种方式：</p>
-<h4 id="方式一"><a href="#方式一" class="headerlink" title="方式一"></a>方式一</h4><p>在@Value 注入的变量所在类上添加注解@RefreshScope：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_18.png"
-                      alt="hotUpdate"
-                ></p>
-<h4 id="方式二"><a href="#方式二" class="headerlink" title="方式二"></a>方式二</h4><p>使用@ConfigurationProperties 注解代替@Value 注解。</p>
-<p>在 user-service 服务中，添加一个类，读取 patterrn.dateformat 属性：</p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> cn.itcast.user.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.context.properties.ConfigurationProperties;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@ConfigurationProperties(prefix = &quot;pattern&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatternProperties</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String dateformat;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-<p>在 UserController 中使用这个类代替@Value：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_19.png"
-                      alt="hotUpdate"
-                ></p>
-<h3 id="配置共享"><a href="#配置共享" class="headerlink" title="配置共享"></a>配置共享</h3><p>其实微服务启动时，会去 nacos 读取多个配置文件，例如：</p>
-<ul>
-<li><p><code>[spring.application.name]-[spring.profiles.active].yaml</code>，例如：userservice-dev.yaml</p>
-</li>
-<li><p><code>[spring.application.name].yaml</code>，例如：userservice.yaml</p>
-</li>
-</ul>
-<p>而<code>[spring.application.name].yaml</code>不包含环境，因此可以被多个环境共享。</p>
-<h4 id="添加一个环境共享配置"><a href="#添加一个环境共享配置" class="headerlink" title="添加一个环境共享配置"></a>添加一个环境共享配置</h4><p>我们在 nacos 中添加一个 userservice.yaml 文件：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_20.png"
-                      alt="sharedEnv"
-                ></p>
-<h4 id="在-user-service-中读取共享配置"><a href="#在-user-service-中读取共享配置" class="headerlink" title="在 user-service 中读取共享配置"></a>在 user-service 中读取共享配置</h4><p>在 user-service 服务中，修改 PatternProperties 类，读取新添加的属性：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_21.png"
-                      alt="sharedEnv"
-                ><br>在 user-service 服务中，修改 UserController，添加一个方法：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_22.png"
-                      alt="sharedEnv"
-                ></p>
-<h4 id="运行两个-UserApplication，使用不同的-profile"><a href="#运行两个-UserApplication，使用不同的-profile" class="headerlink" title="运行两个 UserApplication，使用不同的 profile"></a>运行两个 UserApplication，使用不同的 profile</h4><p>修改 UserApplication2 这个启动项，改变其 profile 值：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_23.png"
-                      alt="JVMENV"
-                ><br>这样，UserApplication(8081)使用的 profile 是 dev，UserApplication2(8082)使用的 profile 是 test。</p>
-<p>启动 UserApplication 和 UserApplication2<br>访问<a class="link"   href="http://localhost:8081/user/prop" >http://localhost:8081/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_24.png"
-                      alt="JVMENV"
-                ><br>访问<a class="link"   href="http://localhost:8082/user/prop" >http://localhost:8082/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_25.png"
-                      alt="JVMENV"
-                ><br>可以看出来，不管是 dev，还是 test 环境，都读取到了 envSharedValue 这个属性的值。</p>
-<h4 id="配置共享的优先级"><a href="#配置共享的优先级" class="headerlink" title="配置共享的优先级"></a>配置共享的优先级</h4><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_26.png"
-                      alt="JVMENV"
-                ></p>
-]]></content>
-      <categories>
-        <category>学习</category>
-      </categories>
-      <tags>
-        <tag>Spring Cloud</tag>
-        <tag>Nacos</tag>
       </tags>
   </entry>
   <entry>
@@ -826,6 +689,234 @@
       </tags>
   </entry>
   <entry>
+    <title>Spring Cloud-Nacos篇(注册中心)</title>
+    <url>/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <content><![CDATA[<h2 id="认识-Nacos"><a href="#认识-Nacos" class="headerlink" title="认识 Nacos"></a>认识 Nacos</h2><p><a class="link"   href="https://nacos.io/" >Nacos <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>是阿里巴巴的产品，现在是<a class="link"   href="https://spring.io/projects/spring-cloud" >SpringCloud <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中的一个组件。相比<a class="link"   href="https://github.com/Netflix/eureka" >Eureka <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>功能更加丰富，在国内受欢迎程度较高。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_01.png"
+                      alt="nacos"
+                ></p>
+<h2 id="服务注册到-nacos"><a href="#服务注册到-nacos" class="headerlink" title="服务注册到 nacos"></a>服务注册到 nacos</h2><p>Nacos 是 SpringCloudAlibaba 的组件，而 SpringCloudAlibaba 也遵循 SpringCloud 中定义的服务注册、服务发现规范。因此使用 Nacos 和使用 Eureka 对于微服务来说，并没有太大区别。</p>
+<h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>在 cloud-demo 父工程的 pom 文件中的<code>&lt;dependencyManagement&gt;</code>中引入 SpringCloudAlibaba 的依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-alibaba-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.2.6.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<p>然后在 user-service 和 order-service 中的 pom 文件中引入 nacos-discovery 依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-discovery<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="配置-nacos-地址"><a href="#配置-nacos-地址" class="headerlink" title="配置 nacos 地址"></a>配置 nacos 地址</h3><p>在 user-service 和 order-service 的 application.yml 中添加 nacos 地址：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="重启"><a href="#重启" class="headerlink" title="重启"></a>重启</h3><p>重启微服务后，登录 nacos 管理页面，可以看到微服务信息：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_02.png"
+                      alt="nacos"
+                ></p>
+<h2 id="服务分级存储模型"><a href="#服务分级存储模型" class="headerlink" title="服务分级存储模型"></a>服务分级存储模型</h2><p>一个服务可以包含多个集群，如杭州、上海，每个集群下可以有多个实例，形成分级模型，如图：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_03.png"
+                      alt="cluster"
+                ><br>微服务互相访问时，应该尽可能访问同集群实例，因为本地访问速度更快。当本集群内不可用时，才访问其它集群。</p>
+<h3 id="给-user-service-配置集群"><a href="#给-user-service-配置集群" class="headerlink" title="给 user-service 配置集群"></a>给 user-service 配置集群</h3><div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="同集群优先的负载均衡"><a href="#同集群优先的负载均衡" class="headerlink" title="同集群优先的负载均衡"></a>同集群优先的负载均衡</h3><p>默认的<code>ZoneAvoidanceRule</code>并不能实现根据同集群优先来实现负载均衡。</p>
+<p>因此 Nacos 中提供了一个<code>NacosRule</code>的实现，可以优先从同集群中挑选实例。<br>1）给 order-service 配置集群信息<br>修改 order-service 的 application.yml 文件，添加集群配置：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
+
+<p>2）修改负载均衡规则<br>修改 order-service 的 application.yml 文件，修改负载均衡规则：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.alibaba.cloud.nacos.ribbon.NacosRule</span> <span class="comment"># 负载均衡规则</span></span><br></pre></td></tr></table></figure></div>
+
+<h2 id="权重配置"><a href="#权重配置" class="headerlink" title="权重配置"></a>权重配置</h2><p>实际部署中会出现这样的场景：</p>
+<p>服务器设备性能有差异，部分实例所在机器性能较好，另一些较差，我们希望性能好的机器承担更多的用户请求。<br>在 nacos 控制台，找到 user-service 的实例列表，点击编辑，即可修改权重：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_04.png"
+                      alt="loadBalance"
+                ></p>
+<h2 id="环境隔离"><a href="#环境隔离" class="headerlink" title="环境隔离"></a>环境隔离</h2><p>Nacos 提供了 namespace 来实现环境隔离功能。</p>
+<ul>
+<li>nacos 中可以有多个 namespace</li>
+<li>namespace 下可以有 group、service 等</li>
+<li>不同 namespace 之间相互隔离，例如不同 namespace 的服务互相不可见<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_05.png"
+                      alt="namespace"
+                ></li>
+</ul>
+<h3 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h3><p>默认情况下，所有 service、data、group 都在同一个 namespace，名为 public：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_06.png"
+                      alt="namespace"
+                ><br>我们可以点击页面新增按钮，添加一个 namespace：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_07.png"
+                      alt="namespace"
+                ><br>然后，填写表单：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_08.png"
+                      alt="namespace"
+                ><br>就能在页面看到一个新的 namespace：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_09.png"
+                      alt="namespace"
+                ></p>
+<h3 id="给微服务配置-namespace"><a href="#给微服务配置-namespace" class="headerlink" title="给微服务配置 namespace"></a>给微服务配置 namespace</h3><p>给微服务配置 namespace 只能通过修改配置来实现。</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span></span><br><span class="line">        <span class="attr">namespace:</span> <span class="string">492a7d5d-237b-46a1-a99a-fa8e98e4b0f9</span> <span class="comment"># 命名空间，填ID</span></span><br></pre></td></tr></table></figure></div>
+
+<h2 id="Nacos-与-Eureka-的区别"><a href="#Nacos-与-Eureka-的区别" class="headerlink" title="Nacos 与 Eureka 的区别"></a>Nacos 与 Eureka 的区别</h2><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_10.png"
+                      alt="namespace"
+                ></p>
+<ul>
+<li><p>Nacos 与 eureka 的共同点</p>
+<ul>
+<li>都支持服务注册和服务拉取</li>
+<li>都支持服务提供者心跳方式做健康检测</li>
+</ul>
+</li>
+<li><p>Nacos 与 Eureka 的区别</p>
+<ul>
+<li>Nacos 支持服务端主动检测提供者状态：临时实例采用心跳模式，非临时实例采用主动检测模式</li>
+<li>临时实例心跳不正常会被剔除，非临时实例则不会被剔除</li>
+<li>Nacos 支持服务列表变更的消息推送模式，服务列表更新更及时</li>
+<li>Nacos 集群默认采用 AP 方式，当集群中存在非临时实例时，采用 CP 模式；Eureka 采用 AP 方式</li>
+</ul>
+</li>
+</ul>
+<h2 id="Nacos-配置管理"><a href="#Nacos-配置管理" class="headerlink" title="Nacos 配置管理"></a>Nacos 配置管理</h2><h3 id="统一配置管理"><a href="#统一配置管理" class="headerlink" title="统一配置管理"></a>统一配置管理</h3><p>当微服务部署的实例越来越多，达到数十、数百时，逐个修改微服务配置就会让人抓狂，而且很容易出错。我们需要一种统一配置管理方案，可以集中管理所有实例的配置。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_11.png"
+                      alt="config"
+                ></p>
+<h4 id="在-nacos-中添加配置文件"><a href="#在-nacos-中添加配置文件" class="headerlink" title="在 nacos 中添加配置文件"></a>在 nacos 中添加配置文件</h4><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_12.png"
+                      alt="config"
+                ><br>然后在弹出的表单中，填写配置信息：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_13.png"
+                      alt="config"
+                ><br><em>注意：项目的核心配置，需要热更新的配置才有放到 nacos 管理的必要。基本不会变更的一些配置还是保存在微服务本地比较好。</em></p>
+<h4 id="从微服务拉取配置"><a href="#从微服务拉取配置" class="headerlink" title="从微服务拉取配置"></a>从微服务拉取配置</h4><p>微服务要拉取 nacos 中管理的配置，并且与本地的 application.yml 配置合并，才能完成项目启动。</p>
+<p>但如果尚未读取 application.yml，又如何得知 nacos 地址呢？</p>
+<p>因此 spring 引入了一种新的配置文件：bootstrap.yaml 文件，会在 application.yml 之前被读取，流程如下：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_14.png"
+                      alt="config"
+                ><br>1）引入 nacos-config 依赖</p>
+<p>首先，在 user-service 服务中，引入 nacos-config 的客户端依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--nacos配置管理依赖--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<p>2）添加 bootstrap.yaml</p>
+<p>然后，在 user-service 中添加一个 bootstrap.yaml 文件，内容如下：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">userservice</span> <span class="comment"># 服务名称</span></span><br><span class="line">  <span class="attr">profiles:</span></span><br><span class="line">    <span class="attr">active:</span> <span class="string">dev</span> <span class="comment">#开发环境，这里是dev</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span> <span class="comment"># Nacos地址</span></span><br><span class="line">      <span class="attr">config:</span></span><br><span class="line">        <span class="attr">file-extension:</span> <span class="string">yaml</span> <span class="comment"># 文件后缀名</span></span><br></pre></td></tr></table></figure></div>
+
+<p>本例中，就是去读取<code>userservice-dev.yaml</code>：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_15.png"
+                      alt="config"
+                ><br>3）读取 nacos 配置</p>
+<p>在 user-service 中的 UserController 中添加业务逻辑，读取 pattern.dateformat 配置：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_16.png"
+                      alt="config"
+                ><br>在页面访问，可以看到效果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_17.png"
+                      alt="config"
+                ></p>
+<h3 id="配置热更新"><a href="#配置热更新" class="headerlink" title="配置热更新"></a>配置热更新</h3><p>我们最终的目的，是修改 nacos 中的配置后，微服务中无需重启即可让配置生效，也就是<strong>配置热更新</strong>。</p>
+<p>要实现配置热更新，可以使用两种方式：</p>
+<h4 id="方式一"><a href="#方式一" class="headerlink" title="方式一"></a>方式一</h4><p>在@Value 注入的变量所在类上添加注解@RefreshScope：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_18.png"
+                      alt="hotUpdate"
+                ></p>
+<h4 id="方式二"><a href="#方式二" class="headerlink" title="方式二"></a>方式二</h4><p>使用@ConfigurationProperties 注解代替@Value 注解。</p>
+<p>在 user-service 服务中，添加一个类，读取 patterrn.dateformat 属性：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> cn.itcast.user.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.context.properties.ConfigurationProperties;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@ConfigurationProperties(prefix = &quot;pattern&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatternProperties</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String dateformat;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>在 UserController 中使用这个类代替@Value：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_19.png"
+                      alt="hotUpdate"
+                ></p>
+<h3 id="配置共享"><a href="#配置共享" class="headerlink" title="配置共享"></a>配置共享</h3><p>其实微服务启动时，会去 nacos 读取多个配置文件，例如：</p>
+<ul>
+<li><p><code>[spring.application.name]-[spring.profiles.active].yaml</code>，例如：userservice-dev.yaml</p>
+</li>
+<li><p><code>[spring.application.name].yaml</code>，例如：userservice.yaml</p>
+</li>
+</ul>
+<p>而<code>[spring.application.name].yaml</code>不包含环境，因此可以被多个环境共享。</p>
+<h4 id="添加一个环境共享配置"><a href="#添加一个环境共享配置" class="headerlink" title="添加一个环境共享配置"></a>添加一个环境共享配置</h4><p>我们在 nacos 中添加一个 userservice.yaml 文件：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_20.png"
+                      alt="sharedEnv"
+                ></p>
+<h4 id="在-user-service-中读取共享配置"><a href="#在-user-service-中读取共享配置" class="headerlink" title="在 user-service 中读取共享配置"></a>在 user-service 中读取共享配置</h4><p>在 user-service 服务中，修改 PatternProperties 类，读取新添加的属性：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_21.png"
+                      alt="sharedEnv"
+                ><br>在 user-service 服务中，修改 UserController，添加一个方法：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_22.png"
+                      alt="sharedEnv"
+                ></p>
+<h4 id="运行两个-UserApplication，使用不同的-profile"><a href="#运行两个-UserApplication，使用不同的-profile" class="headerlink" title="运行两个 UserApplication，使用不同的 profile"></a>运行两个 UserApplication，使用不同的 profile</h4><p>修改 UserApplication2 这个启动项，改变其 profile 值：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_23.png"
+                      alt="JVMENV"
+                ><br>这样，UserApplication(8081)使用的 profile 是 dev，UserApplication2(8082)使用的 profile 是 test。</p>
+<p>启动 UserApplication 和 UserApplication2<br>访问<a class="link"   href="http://localhost:8081/user/prop" >http://localhost:8081/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_24.png"
+                      alt="JVMENV"
+                ><br>访问<a class="link"   href="http://localhost:8082/user/prop" >http://localhost:8082/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_25.png"
+                      alt="JVMENV"
+                ><br>可以看出来，不管是 dev，还是 test 环境，都读取到了 envSharedValue 这个属性的值。</p>
+<h4 id="配置共享的优先级"><a href="#配置共享的优先级" class="headerlink" title="配置共享的优先级"></a>配置共享的优先级</h4><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_26.png"
+                      alt="JVMENV"
+                ></p>
+]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
+      <tags>
+        <tag>Spring Cloud</tag>
+        <tag>Nacos</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spring Cloud-Ribbon篇(负载均衡)</title>
     <url>/2024/03/12/Spring-Cloud-Ribbon%E7%AF%87-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
     <content><![CDATA[<h2 id="负载均衡原理"><a href="#负载均衡原理" class="headerlink" title="负载均衡原理"></a>负载均衡原理</h2><p>SpringCloud底层其实是利用了一个名为Ribbon的组件，来实现负载均衡功能的。<br><img  
@@ -976,97 +1067,6 @@
       <tags>
         <tag>Spring Cloud</tag>
         <tag>Ribbon</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis缓存</title>
-    <url>/2024/02/11/Redis%E7%BC%93%E5%AD%98/</url>
-    <content><![CDATA[<h2 id="缓存（cache）"><a href="#缓存（cache）" class="headerlink" title="缓存（cache）"></a>缓存（cache）</h2><p>缓存(Cache), 就是数据交换的缓冲区,俗称的缓存就是缓冲区内的数据,一般从数据库中获取,存储于<em>本地代码</em>。</p>
-<h2 id="为什么要使用缓存"><a href="#为什么要使用缓存" class="headerlink" title="为什么要使用缓存"></a>为什么要使用缓存</h2><ul>
-<li>缓存数据存储于代码中,而代码运行在内存中,内存的读写性能远高于磁盘,缓存可以大大降低用户访问并发量带来的服务器读写压力；</li>
-<li>实际开发过程中,企业的数据量,少则几十万,多则几千万,这么大数据量,如果没有缓存来作为”避震器”,系统是几乎撑不住的,所以企业会大量运用到缓存技术;</li>
-<li>但是缓存也会增加代码复杂度和运营的成本</li>
-</ul>
-<h2 id="缓存中的更新策略"><a href="#缓存中的更新策略" class="headerlink" title="缓存中的更新策略"></a>缓存中的更新策略</h2><ul>
-<li>内存淘汰 - Redis 自带的内存淘汰机制</li>
-<li>淘汰过期 - 利用 expire 命令给数据设置过期时间</li>
-<li>主动更新 - 主动完成数据库与缓存的同时更新</li>
-</ul>
-<h3 id="经常使用的更新策略（Cache-Aside）中的三大问题"><a href="#经常使用的更新策略（Cache-Aside）中的三大问题" class="headerlink" title="经常使用的更新策略（Cache Aside）中的三大问题"></a>经常使用的更新策略（Cache Aside）中的三大问题</h3><ul>
-<li>更新缓存还是删除缓存？<ol>
-<li>更新缓存会产生无效更新，并且存在较大的线程安全问题</li>
-<li>删除缓存本质是延迟更新，没有无效更新，线程安全问题相对较低<br><strong>总结：选择删除缓存</strong></li>
-</ol>
-</li>
-<li>先操作数据库还是缓存？<ol>
-<li>先更新数据，再删除缓存 - 在满足原子性的情况下，安全问题概率较低</li>
-<li>先删除缓存，再更新数据库 - 安全问题概率较高<br><strong>总结：先更新数据，再删除缓存</strong></li>
-</ol>
-</li>
-<li>如何确保数据库与缓存操作原子性？<ol>
-<li>单体系统 - 利用事务机制</li>
-<li>分布式系统 - 利用分布式事务机制</li>
-</ol>
-</li>
-</ul>
-<h1 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h1><ul>
-<li>产生原因：在同一时间大量的缓存 key 同时失效或者 Redis 服务器宕机，导致大量的请求到达数据库，带来巨大的压力</li>
-<li>解决方案：<ol>
-<li>给不同的 key 的 TTL 添加随机值</li>
-<li>利用 Redis 集群提高服务的可用性</li>
-<li>给缓存业务添加降级限流策略</li>
-<li>给业务添加多级缓存</li>
-</ol>
-</li>
-</ul>
-<h1 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h1><ul>
-<li>产生原因：客户端请求的数据在缓存中和数据库中都不存在，这样缓存永远不会生效，这些请求都会打到数据库</li>
-<li>解决方案：<ol>
-<li>缓存空对象 - 对于不存在的数据也在 Redis 建立缓存，值为空，并设置一个较短的 TTL 时间<br>优点：实现简单，维护方便<br>缺点：额外的内存消耗，短期的数据不一致问题</li>
-<li>布隆过滤 - 利用布隆过滤算法，在请求进入 Redis 之前先判断是否存在，如果不存在则直接拒绝请求<br>优点：内存占用少<br>缺点：实现复杂，存在误判的可能性</li>
-<li>其他：做好数据的基础格式校验，加强用户权限校验，做好热点参数的限流</li>
-</ol>
-</li>
-</ul>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;R, ID&gt; R <span class="title function_">queryWithPassThrough</span><span class="params">(String keyPrefix, ID id, Class&lt;R&gt; type, Function&lt;ID, R&gt; dbFallBack, Long time, TimeUnit unit)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> keyPrefix + id;</span><br><span class="line">    <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">    <span class="comment">//2.判断是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (StrUtil.isNotBlank(json)) &#123;</span><br><span class="line">        <span class="comment">//3.存在，直接返回</span></span><br><span class="line">        <span class="keyword">return</span> JSONUtil.toBean(json, type);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//判断命中的是否为空值</span></span><br><span class="line">    <span class="keyword">if</span>(json != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">//返回错误信息</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//4.不存在，根据id查找数据库</span></span><br><span class="line">    <span class="type">R</span> <span class="variable">r</span> <span class="operator">=</span> dbFallBack.apply(id);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//5.如果数据库不存在，给这个数据设为空值，添加短暂的TTL</span></span><br><span class="line">    <span class="keyword">if</span> (r == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">//将空值写入redis</span></span><br><span class="line">        stringRedisTemplate.opsForValue().set(key, <span class="string">&quot;&quot;</span>, CACHE_NULL_TTL, TimeUnit.MINUTES);</span><br><span class="line">        <span class="comment">//返回错误</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//6.存在，写入redis</span></span><br><span class="line">    <span class="built_in">this</span>.set(key, r, time, unit);</span><br><span class="line">    <span class="comment">//7.返回</span></span><br><span class="line">    <span class="keyword">return</span> r;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></div>
-
-<h1 id="缓存击穿（热点-key）"><a href="#缓存击穿（热点-key）" class="headerlink" title="缓存击穿（热点 key）"></a>缓存击穿（热点 key）</h1><ul>
-<li><p>产生原因：</p>
-<ol>
-<li>热点 Key 在某一时段被高并发访问</li>
-<li>缓存重建耗时较长<br><em>热点 key 突然过期，因为重建耗时长，在这段时间内大量请求落到数据库，带来巨大冲击</em></li>
-</ol>
-</li>
-<li><p>解决方案</p>
-<ol>
-<li>互斥锁 - 给缓存重建过程加锁，确保重建过程只有一个线程执行，其它线程等待<br>优点：实现简单，没有额外内存消耗，一致性好<br>缺点：等待导致性能下降，有死锁风险</li>
-</ol>
-</li>
-</ul>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//获取锁</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(String key)</span> &#123;</span><br><span class="line">    <span class="type">Boolean</span> <span class="variable">flag</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().setIfAbsent(key, <span class="string">&quot;1&quot;</span>, <span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line">    <span class="keyword">return</span> BooleanUtil.isTrue(flag);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//释放锁</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">(String key)</span> &#123;</span><br><span class="line">    stringRedisTemplate.delete(key);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//互斥锁解决缓存击穿</span></span><br><span class="line"><span class="keyword">public</span> Shop <span class="title function_">queryWithMutex</span><span class="params">(Long id)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> CACHE_SHOP_KEY + id;</span><br><span class="line">    <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">shopJson</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">    <span class="comment">//2.判断是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (StrUtil.isNotBlank(shopJson)) &#123;</span><br><span class="line">        <span class="comment">//3.存在，直接返回</span></span><br><span class="line">        <span class="keyword">return</span> JSONUtil.toBean(shopJson, Shop.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//判断命中的是否是空值</span></span><br><span class="line">    <span class="keyword">if</span>(shopJson != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="comment">//返回错误信息</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//4.实现缓存重建</span></span><br><span class="line">    <span class="comment">//4.1获取互斥锁</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">lockKey</span> <span class="operator">=</span> LOCK_SHOP_KEY;</span><br><span class="line">    <span class="type">Shop</span> <span class="variable">shop</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">boolean</span> <span class="variable">isLock</span> <span class="operator">=</span> tryLock(lockKey);</span><br><span class="line">        <span class="comment">//4.2判断是否获取成功</span></span><br><span class="line">        <span class="keyword">while</span>(!isLock) &#123;</span><br><span class="line">            <span class="comment">//4.3失败，休眠并且重试</span></span><br><span class="line">            Thread.sleep(<span class="number">50</span>);</span><br><span class="line">            <span class="keyword">return</span> queryWithMutex(id);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//4.4成功，根据id查找数据库</span></span><br><span class="line">        <span class="comment">//DoubleCheck</span></span><br><span class="line">            <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">            shopJson = stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">            <span class="comment">//2.判断是否存在</span></span><br><span class="line">            <span class="keyword">if</span> (StrUtil.isNotBlank(shopJson)) &#123;</span><br><span class="line">                <span class="comment">//3.存在，直接返回</span></span><br><span class="line">                <span class="keyword">return</span> JSONUtil.toBean(shopJson, Shop.class);</span><br><span class="line">            &#125;</span><br><span class="line">        <span class="comment">//DoubleCheck结束</span></span><br><span class="line"></span><br><span class="line">        shop = getById(id);</span><br><span class="line">        <span class="comment">//模拟重建的延迟</span></span><br><span class="line">        Thread.sleep(<span class="number">200</span>);</span><br><span class="line">        <span class="keyword">if</span> (shop == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="comment">//将空值写入redis</span></span><br><span class="line">            stringRedisTemplate.opsForValue().set(key, <span class="string">&quot;&quot;</span>, CACHE_NULL_TTL, TimeUnit.MINUTES);</span><br><span class="line">            <span class="comment">//5.不存在，返回错误</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//6.存在，写入redis</span></span><br><span class="line">        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">//7.释放互斥锁</span></span><br><span class="line">        unlock(lockKey);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//8.返回</span></span><br><span class="line">    <span class="keyword">return</span> shop;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-<ol start="2">
-<li>逻辑过期:<ul>
-<li>热点key缓存永不过期，而是设置一个逻辑过期时间，查询到数据时通过对逻辑过期时间判断，来决定是否需要重建缓存</li>
-<li>重建缓存也通过互斥锁保证单线程执行</li>
-<li>重建缓存利用独立线程异步执行</li>
-<li>其它线程无需等待，直接查询到的旧数据即可<br>优点：线程无需等待，性能较好<br>缺点：短时间不保证一致性，有额外内存消耗，实现复杂</li>
-</ul>
-</li>
-</ol>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//设置线程池</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ExecutorService</span> <span class="variable">CACHE_REBUILD_EXECUTOR</span> <span class="operator">=</span> Executors.newFixedThreadPool(<span class="number">10</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//逻辑过期解决缓存击穿</span></span><br><span class="line"><span class="keyword">public</span> &lt;R, ID&gt; R <span class="title function_">queryWithLogicalExpire</span><span class="params">(String keyPrefix, ID id, Class&lt;R&gt; type, Function&lt;ID, R&gt; dbFallBack, Long time, TimeUnit unit)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> keyPrefix + id;</span><br><span class="line">    <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">    <span class="comment">//2.判断是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (StrUtil.isBlank(json)) &#123;</span><br><span class="line">        <span class="comment">//3.不存在，直接返回</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//4.命中，需要先把json反序列化为对象</span></span><br><span class="line">    <span class="type">RedisData</span> <span class="variable">redisData</span> <span class="operator">=</span> JSONUtil.toBean(json, RedisData.class);</span><br><span class="line">    <span class="type">JSONObject</span> <span class="variable">data</span> <span class="operator">=</span> (JSONObject) redisData.getData();</span><br><span class="line">    <span class="type">R</span> <span class="variable">r</span> <span class="operator">=</span> JSONUtil.toBean(data, type);</span><br><span class="line">    <span class="type">LocalDateTime</span> <span class="variable">expireTime</span> <span class="operator">=</span> redisData.getExpireTime();</span><br><span class="line">    <span class="comment">//5.判断是否过期</span></span><br><span class="line">    <span class="keyword">if</span> (expireTime.isAfter(LocalDateTime.now())) &#123;</span><br><span class="line">        <span class="comment">//5.1未过期， 直接返回店铺信息</span></span><br><span class="line">        <span class="keyword">return</span> r;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//5.2已过期，需要缓存重建</span></span><br><span class="line">    <span class="comment">//6.缓存重建</span></span><br><span class="line">    <span class="comment">//6.1获取互斥锁</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">lockKey</span> <span class="operator">=</span> LOCK_SHOP_KEY;</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">isLock</span> <span class="operator">=</span> tryLock(lockKey);</span><br><span class="line">    <span class="comment">//6.2判断是否获取锁成功</span></span><br><span class="line">    <span class="keyword">if</span>(isLock)&#123;</span><br><span class="line">        <span class="comment">// TODO 6.3成功，开启独立线程，实现缓存重建</span></span><br><span class="line">        <span class="comment">//DoubleCheck</span></span><br><span class="line">        <span class="comment">//1.从redis查询店铺缓存</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">shopJson2</span> <span class="operator">=</span> stringRedisTemplate.opsForValue().get(key);</span><br><span class="line">        <span class="comment">//2.判断是否存在</span></span><br><span class="line">        <span class="keyword">if</span> (!r.equals(shopJson2)) &#123;</span><br><span class="line">            <span class="comment">//3.存在，直接返回</span></span><br><span class="line">            <span class="keyword">return</span> JSONUtil.toBean(shopJson2, type);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//DoubleCheck</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">//开启新线程</span></span><br><span class="line">        CACHE_REBUILD_EXECUTOR.submit(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//重建缓存</span></span><br><span class="line">                <span class="comment">//1.查询数据库</span></span><br><span class="line">                <span class="type">R</span> <span class="variable">r1</span> <span class="operator">=</span> dbFallBack.apply(id);</span><br><span class="line">                <span class="comment">//2.写入缓存</span></span><br><span class="line">                <span class="built_in">this</span>.setLogicalExpire(key, r1, time, unit);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                <span class="comment">//释放锁</span></span><br><span class="line">                unlock(lockKey);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//7.返回</span></span><br><span class="line">    <span class="keyword">return</span> r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-]]></content>
-      <categories>
-        <category>学习</category>
-      </categories>
-      <tags>
-        <tag>redis</tag>
-        <tag>spring boot</tag>
       </tags>
   </entry>
   <entry>
