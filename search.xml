@@ -170,59 +170,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Saas短链接(项目)</title>
-    <url>/2024/03/28/Saas%E7%9F%AD%E9%93%BE%E6%8E%A5/</url>
-    <content><![CDATA[<h1 id="用户模块"><a href="#用户模块" class="headerlink" title="用户模块"></a>用户模块</h1><h2 id="用户敏感信息脱敏（手机号）"><a href="#用户敏感信息脱敏（手机号）" class="headerlink" title="用户敏感信息脱敏（手机号）"></a>用户敏感信息脱敏（手机号）</h2><ul>
-<li>创建一个手机序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 手机号脱敏反序列化</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PhoneDesensitizationSerializer</span> <span class="keyword">extends</span> <span class="title class_">JsonSerializer</span>&lt;String&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">serialize</span><span class="params">(String phone, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">phoneDesensitization</span> <span class="operator">=</span> DesensitizedUtil.mobilePhone(phone);</span><br><span class="line">        jsonGenerator.writeString(phoneDesensitization);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
-<li>在敏感字段上加自定义序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserRespDTO</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * id</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用户名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 真实姓名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String realName;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 手机号</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@JsonSerialize(using = PhoneDesensitizationSerializer.class)</span></span><br><span class="line">    <span class="keyword">private</span> String phone;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 邮箱</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String mail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h2><h3 id="使用布隆过滤器"><a href="#使用布隆过滤器" class="headerlink" title="使用布隆过滤器"></a>使用布隆过滤器</h3><ul>
-<li>为了防止缓存击穿直接打到数据库，可以采用布隆过滤器</li>
-</ul>
-<p><strong>引入依赖</strong></p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<p><strong>配置Redis</strong></p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">data:</span></span><br><span class="line">    <span class="attr">redis:</span></span><br><span class="line">      <span class="attr">host:</span> <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">6379</span></span><br><span class="line">      <span class="attr">password:</span> <span class="string">root</span></span><br></pre></td></tr></table></figure></div>
-<p><strong>创建布隆过滤器实体</strong></p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RBloomFilterConfiguration</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 防止用户注册查询数据库的布隆过滤器</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RBloomFilter&lt;String&gt; <span class="title function_">userRegisterCachePenetrationBloomFilter</span><span class="params">(RedissonClient redissonClient)</span> &#123;</span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redissonClient.getBloomFilter(<span class="string">&quot;userRegisterCachePenetrationBloomFilter&quot;</span>);</span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000</span>, <span class="number">0.001</span>); <span class="comment">//布隆过滤器中的大小， 误判率</span></span><br><span class="line">        <span class="keyword">return</span> bloomFilter;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-<p><strong>使用</strong></p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注入</span></span><br><span class="line"><span class="meta">@Resource</span></span><br><span class="line"><span class="keyword">private</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line"><span class="comment">//调用方法</span></span><br><span class="line">userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
-<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><h4 id="如何防止用户名重复？"><a href="#如何防止用户名重复？" class="headerlink" title="如何防止用户名重复？"></a>如何防止用户名重复？</h4><ul>
-<li>通过布隆过滤器把所有用户名进行加载。这样该功能就能完全隔离数据库。<br>数据库层面添加唯一索引。</li>
-</ul>
-<h4 id="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"><a href="#如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？" class="headerlink" title="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"></a>如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？</h4><p>因为用户名没注册，所以布隆过滤器不存在，代表着可以触发注册流程插入数据库。但是如果恶意请求短时间海量请求，这些请求都会落到数据库，造成数据库访问压力。这里通过分布式锁，锁定用户名进行串行执行，防止恶意请求利用未注册用户名将请求打到数据库。</p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">        <span class="comment">//存在</span></span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">            <span class="comment">//获取锁成功</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">            <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">            &#125;</span><br><span class="line">            userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/saas_01.png"
-                     
-                ></p>
-<h2 id="自动填充字段"><a href="#自动填充字段" class="headerlink" title="自动填充字段"></a>自动填充字段</h2><h3 id="Mybatis-Plus自动填充"><a href="#Mybatis-Plus自动填充" class="headerlink" title="Mybatis-Plus自动填充"></a>Mybatis-Plus自动填充</h3><ul>
-<li>在例如create_time, update_time等字段中，在插入、更新操作中需要填充该字段，可以利用<a class="link"   href="https://baomidou.com/pages/4c6bcf/" >MP(mybatis-plus) <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中提供的方法<br><strong>1.实现元对象处理接口</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注册为Bean对象，交给Spring容器管理</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyMetaObjectHandler</span> <span class="keyword">implements</span> <span class="title class_">MetaObjectHandler</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;createTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;delFlag&quot;</span>, () -&gt; <span class="number">0</span>, Integer.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-<strong>2.注解填充字段</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Date createTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 修改时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT_UPDATE)</span></span><br><span class="line"><span class="keyword">private</span> Date updateTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 删除标识 0：未删除 1：已删除</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Integer delFlag;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="分库分表"><a href="#分库分表" class="headerlink" title="分库分表"></a>分库分表</h2><h3 id="数据库分库分表框架-ShardingSphere"><a href="#数据库分库分表框架-ShardingSphere" class="headerlink" title="数据库分库分表框架 ShardingSphere"></a>数据库分库分表框架 ShardingSphere</h3><p><strong>引入依赖</strong></p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.shardingsphere<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>shardingsphere-jdbc-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.3.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-<p><strong>定义分片规则</strong></p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">datasource:</span></span><br><span class="line">  	<span class="comment"># ShardingSphere 对 Driver 自定义，实现分库分表等隐藏逻辑</span></span><br><span class="line">    <span class="attr">driver-class-name:</span> <span class="string">org.apache.shardingsphere.driver.ShardingSphereDriver</span></span><br><span class="line">    <span class="comment"># ShardingSphere 配置文件路径</span></span><br><span class="line">    <span class="attr">url:</span> <span class="string">jdbc:shardingsphere:classpath:shardingsphere-config.yaml</span></span><br></pre></td></tr></table></figure></div>
-<p><strong>shardingsphere-config.yaml</strong></p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 数据源集合</span></span><br><span class="line"><span class="attr">dataSources:</span></span><br><span class="line">  <span class="attr">ds_0:</span></span><br><span class="line">    <span class="attr">dataSourceClassName:</span> <span class="string">com.zaxxer.hikari.HikariDataSource</span></span><br><span class="line">    <span class="attr">driverClassName:</span> <span class="string">com.mysql.cj.jdbc.Driver</span></span><br><span class="line">    <span class="attr">jdbcUrl:</span> <span class="string">jdbc:mysql://127.0.0.1:3306/link?useUnicode=true&amp;characterEncoding=UTF-8&amp;rewriteBatchedStatements=true&amp;allowMultiQueries=true&amp;serverTimezone=Asia/Shanghai</span></span><br><span class="line">    <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">password:</span> <span class="string">root</span></span><br><span class="line"></span><br><span class="line"><span class="attr">rules:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="type">!SHARDING</span></span><br><span class="line">    <span class="attr">tables:</span></span><br><span class="line">      <span class="attr">t_user:</span></span><br><span class="line">        <span class="comment"># 真实数据节点，比如数据库源以及数据库在数据库中真实存在的</span></span><br><span class="line">        <span class="attr">actualDataNodes:</span> <span class="string">ds_0.t_user_$&#123;0..15&#125;</span></span><br><span class="line">        <span class="comment"># 分表策略</span></span><br><span class="line">        <span class="attr">tableStrategy:</span></span><br><span class="line">          <span class="comment"># 用于单分片键的标准分片场景</span></span><br><span class="line">          <span class="attr">standard:</span></span><br><span class="line">            <span class="comment"># 分片键</span></span><br><span class="line">            <span class="attr">shardingColumn:</span> <span class="string">username</span></span><br><span class="line">            <span class="comment"># 分片算法，对应 rules[0].shardingAlgorithms</span></span><br><span class="line">            <span class="attr">shardingAlgorithmName:</span> <span class="string">user_table_hash_mod</span></span><br><span class="line">    <span class="comment"># 分片算法</span></span><br><span class="line">    <span class="attr">shardingAlgorithms:</span></span><br><span class="line">      <span class="comment"># 数据表分片算法</span></span><br><span class="line">      <span class="attr">user_table_hash_mod:</span></span><br><span class="line">        <span class="comment"># 根据分片键 Hash 分片</span></span><br><span class="line">        <span class="attr">type:</span> <span class="string">HASH_MOD</span></span><br><span class="line">        <span class="comment"># 分片数量</span></span><br><span class="line">        <span class="attr">props:</span></span><br><span class="line">          <span class="attr">sharding-count:</span> <span class="number">16</span></span><br><span class="line"><span class="comment"># 展现逻辑 SQL &amp; 真实 SQL</span></span><br><span class="line"><span class="attr">props:</span></span><br><span class="line">  <span class="attr">sql-show:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure></div>
-<h2 id="userService业务代码"><a href="#userService业务代码" class="headerlink" title="userService业务代码"></a>userService业务代码</h2><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 用户接口实现层</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="meta">@RequiredArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserServiceImpl</span> <span class="keyword">extends</span> <span class="title class_">ServiceImpl</span>&lt;UserMapper, UserDO&gt; <span class="keyword">implements</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RedissonClient redissonClient;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserRespDTO <span class="title function_">getUserByUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; queryWrapper = Wrappers.lambdaQuery(UserDO.class).eq(UserDO::getUsername, username);</span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">userDO</span> <span class="operator">=</span> baseMapper.selectOne(queryWrapper);</span><br><span class="line">        <span class="keyword">if</span> (userDO == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(UserErrorCode.USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">UserRespDTO</span> <span class="variable">result</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserRespDTO</span>();</span><br><span class="line">        BeanUtils.copyProperties(userDO, result);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">hashUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> userRegisterCachePenetrationBloomFilter.contains(username);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">            <span class="comment">//存在</span></span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">                <span class="comment">//获取锁成功</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">                <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">                &#125;</span><br><span class="line">                userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">(UserUpdateReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="comment">//TODO 验证修改用户是不是当前用户</span></span><br><span class="line">        LambdaUpdateWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaUpdate(UserDO.class).eq(UserDO::getUsername, requestParam.getUsername());</span><br><span class="line">        baseMapper.update(BeanUtil.toBean(requestParam, UserDO.class), wrapper);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserLoginRespDTO <span class="title function_">login</span><span class="params">(UserLoginReqDTO requestParam)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaQuery(UserDO.class)</span><br><span class="line">                .eq(UserDO::getUsername, requestParam.getUsername())</span><br><span class="line">                .eq(UserDO::getPassword, requestParam.getPassword())</span><br><span class="line">                .eq(UserDO::getDelFlag, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">result</span> <span class="operator">=</span> baseMapper.selectOne(wrapper);</span><br><span class="line">        System.out.println(result);</span><br><span class="line">        <span class="keyword">if</span>(result == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.hasKey(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">if</span>(BooleanUtil.isTrue(hasLogin)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_LOGIN_ERROR);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Hash</span></span><br><span class="line"><span class="comment">         * Key: 用户名</span></span><br><span class="line"><span class="comment">         * Value:</span></span><br><span class="line"><span class="comment">         *  key: token 用户凭证</span></span><br><span class="line"><span class="comment">         *  val: Json 字符串（用户信息）</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> UUID.randomUUID().toString();</span><br><span class="line">        stringRedisTemplate.opsForHash().put(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), token, JSON.toJSONString(result));</span><br><span class="line">        stringRedisTemplate.expire(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), Duration.ofMinutes(<span class="number">30L</span>));</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">UserLoginRespDTO</span>(token);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">checkLogin</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.opsForHash().hasKey(<span class="string">&quot;login_&quot;</span> + username, token);</span><br><span class="line">        <span class="keyword">return</span> BooleanUtil.isTrue(hasLogin);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">logout</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(checkLogin(username, token)) &#123;</span><br><span class="line">            stringRedisTemplate.delete(<span class="string">&quot;login_&quot;</span> + username);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(<span class="string">&quot;用户未登录或token异常&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-
-
-
-
-
-]]></content>
-      <tags>
-        <tag>Saas项目</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Spring Cloud-Eureka篇(注册中心)</title>
     <url>/2024/03/12/Spring-Cloud-Eureka%E7%AF%87/</url>
     <content><![CDATA[<h2 id="Eureka-的作用"><a href="#Eureka-的作用" class="headerlink" title="Eureka 的作用"></a>Eureka 的作用</h2><ul>
@@ -281,6 +228,59 @@
       <tags>
         <tag>Spring Cloud</tag>
         <tag>Eureka</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Saas短链接(项目)</title>
+    <url>/2024/03/28/Saas%E7%9F%AD%E9%93%BE%E6%8E%A5/</url>
+    <content><![CDATA[<h1 id="用户模块"><a href="#用户模块" class="headerlink" title="用户模块"></a>用户模块</h1><h2 id="用户敏感信息脱敏（手机号）"><a href="#用户敏感信息脱敏（手机号）" class="headerlink" title="用户敏感信息脱敏（手机号）"></a>用户敏感信息脱敏（手机号）</h2><ul>
+<li>创建一个手机序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 手机号脱敏反序列化</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PhoneDesensitizationSerializer</span> <span class="keyword">extends</span> <span class="title class_">JsonSerializer</span>&lt;String&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">serialize</span><span class="params">(String phone, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">phoneDesensitization</span> <span class="operator">=</span> DesensitizedUtil.mobilePhone(phone);</span><br><span class="line">        jsonGenerator.writeString(phoneDesensitization);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
+<li>在敏感字段上加自定义序列化器<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserRespDTO</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * id</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用户名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 真实姓名</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String realName;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 手机号</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@JsonSerialize(using = PhoneDesensitizationSerializer.class)</span></span><br><span class="line">    <span class="keyword">private</span> String phone;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 邮箱</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> String mail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h2><h3 id="使用布隆过滤器"><a href="#使用布隆过滤器" class="headerlink" title="使用布隆过滤器"></a>使用布隆过滤器</h3><ul>
+<li>为了防止缓存击穿直接打到数据库，可以采用布隆过滤器</li>
+</ul>
+<p><strong>引入依赖</strong></p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.redisson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>redisson-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<p><strong>配置Redis</strong></p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">data:</span></span><br><span class="line">    <span class="attr">redis:</span></span><br><span class="line">      <span class="attr">host:</span> <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">6379</span></span><br><span class="line">      <span class="attr">password:</span> <span class="string">root</span></span><br></pre></td></tr></table></figure></div>
+<p><strong>创建布隆过滤器实体</strong></p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RBloomFilterConfiguration</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 防止用户注册查询数据库的布隆过滤器</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RBloomFilter&lt;String&gt; <span class="title function_">userRegisterCachePenetrationBloomFilter</span><span class="params">(RedissonClient redissonClient)</span> &#123;</span><br><span class="line">        RBloomFilter&lt;String&gt; bloomFilter = redissonClient.getBloomFilter(<span class="string">&quot;userRegisterCachePenetrationBloomFilter&quot;</span>);</span><br><span class="line">        bloomFilter.tryInit(<span class="number">100000000</span>, <span class="number">0.001</span>); <span class="comment">//布隆过滤器中的大小， 误判率</span></span><br><span class="line">        <span class="keyword">return</span> bloomFilter;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>使用</strong></p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注入</span></span><br><span class="line"><span class="meta">@Resource</span></span><br><span class="line"><span class="keyword">private</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line"><span class="comment">//调用方法</span></span><br><span class="line">userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
+<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><h4 id="如何防止用户名重复？"><a href="#如何防止用户名重复？" class="headerlink" title="如何防止用户名重复？"></a>如何防止用户名重复？</h4><ul>
+<li>通过布隆过滤器把所有用户名进行加载。这样该功能就能完全隔离数据库。<br>数据库层面添加唯一索引。</li>
+</ul>
+<h4 id="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"><a href="#如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？" class="headerlink" title="如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？"></a>如何防止恶意请求毫秒级触发大量请求去一个未注册的用户名？</h4><p>因为用户名没注册，所以布隆过滤器不存在，代表着可以触发注册流程插入数据库。但是如果恶意请求短时间海量请求，这些请求都会落到数据库，造成数据库访问压力。这里通过分布式锁，锁定用户名进行串行执行，防止恶意请求利用未注册用户名将请求打到数据库。</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">        <span class="comment">//存在</span></span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">            <span class="comment">//获取锁成功</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">            <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">            &#125;</span><br><span class="line">            userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/saas_01.png"
+                     
+                ></p>
+<h2 id="自动填充字段"><a href="#自动填充字段" class="headerlink" title="自动填充字段"></a>自动填充字段</h2><h3 id="Mybatis-Plus自动填充"><a href="#Mybatis-Plus自动填充" class="headerlink" title="Mybatis-Plus自动填充"></a>Mybatis-Plus自动填充</h3><ul>
+<li>在例如create_time, update_time等字段中，在插入、更新操作中需要填充该字段，可以利用<a class="link"   href="https://baomidou.com/pages/4c6bcf/" >MP(mybatis-plus) <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中提供的方法<br><strong>1.实现元对象处理接口</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注册为Bean对象，交给Spring容器管理</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyMetaObjectHandler</span> <span class="keyword">implements</span> <span class="title class_">MetaObjectHandler</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;createTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;delFlag&quot;</span>, () -&gt; <span class="number">0</span>, Integer.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateFill</span><span class="params">(MetaObject metaObject)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.strictInsertFill(metaObject, <span class="string">&quot;updateTime&quot;</span>, Date::<span class="keyword">new</span>, Date.class);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<strong>2.注解填充字段</strong><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Date createTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 修改时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT_UPDATE)</span></span><br><span class="line"><span class="keyword">private</span> Date updateTime;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 删除标识 0：未删除 1：已删除</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@TableField(fill = FieldFill.INSERT)</span></span><br><span class="line"><span class="keyword">private</span> Integer delFlag;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="分库分表"><a href="#分库分表" class="headerlink" title="分库分表"></a>分库分表</h2><h3 id="数据库分库分表框架-ShardingSphere"><a href="#数据库分库分表框架-ShardingSphere" class="headerlink" title="数据库分库分表框架 ShardingSphere"></a>数据库分库分表框架 ShardingSphere</h3><p><strong>引入依赖</strong></p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.shardingsphere<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>shardingsphere-jdbc-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.3.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+<p><strong>定义分片规则</strong></p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">datasource:</span></span><br><span class="line">  	<span class="comment"># ShardingSphere 对 Driver 自定义，实现分库分表等隐藏逻辑</span></span><br><span class="line">    <span class="attr">driver-class-name:</span> <span class="string">org.apache.shardingsphere.driver.ShardingSphereDriver</span></span><br><span class="line">    <span class="comment"># ShardingSphere 配置文件路径</span></span><br><span class="line">    <span class="attr">url:</span> <span class="string">jdbc:shardingsphere:classpath:shardingsphere-config.yaml</span></span><br></pre></td></tr></table></figure></div>
+<p><strong>shardingsphere-config.yaml</strong></p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 数据源集合</span></span><br><span class="line"><span class="attr">dataSources:</span></span><br><span class="line">  <span class="attr">ds_0:</span></span><br><span class="line">    <span class="attr">dataSourceClassName:</span> <span class="string">com.zaxxer.hikari.HikariDataSource</span></span><br><span class="line">    <span class="attr">driverClassName:</span> <span class="string">com.mysql.cj.jdbc.Driver</span></span><br><span class="line">    <span class="attr">jdbcUrl:</span> <span class="string">jdbc:mysql://127.0.0.1:3306/link?useUnicode=true&amp;characterEncoding=UTF-8&amp;rewriteBatchedStatements=true&amp;allowMultiQueries=true&amp;serverTimezone=Asia/Shanghai</span></span><br><span class="line">    <span class="attr">username:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">password:</span> <span class="string">root</span></span><br><span class="line"></span><br><span class="line"><span class="attr">rules:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="type">!SHARDING</span></span><br><span class="line">    <span class="attr">tables:</span></span><br><span class="line">      <span class="attr">t_user:</span></span><br><span class="line">        <span class="comment"># 真实数据节点，比如数据库源以及数据库在数据库中真实存在的</span></span><br><span class="line">        <span class="attr">actualDataNodes:</span> <span class="string">ds_0.t_user_$&#123;0..15&#125;</span></span><br><span class="line">        <span class="comment"># 分表策略</span></span><br><span class="line">        <span class="attr">tableStrategy:</span></span><br><span class="line">          <span class="comment"># 用于单分片键的标准分片场景</span></span><br><span class="line">          <span class="attr">standard:</span></span><br><span class="line">            <span class="comment"># 分片键</span></span><br><span class="line">            <span class="attr">shardingColumn:</span> <span class="string">username</span></span><br><span class="line">            <span class="comment"># 分片算法，对应 rules[0].shardingAlgorithms</span></span><br><span class="line">            <span class="attr">shardingAlgorithmName:</span> <span class="string">user_table_hash_mod</span></span><br><span class="line">    <span class="comment"># 分片算法</span></span><br><span class="line">    <span class="attr">shardingAlgorithms:</span></span><br><span class="line">      <span class="comment"># 数据表分片算法</span></span><br><span class="line">      <span class="attr">user_table_hash_mod:</span></span><br><span class="line">        <span class="comment"># 根据分片键 Hash 分片</span></span><br><span class="line">        <span class="attr">type:</span> <span class="string">HASH_MOD</span></span><br><span class="line">        <span class="comment"># 分片数量</span></span><br><span class="line">        <span class="attr">props:</span></span><br><span class="line">          <span class="attr">sharding-count:</span> <span class="number">16</span></span><br><span class="line"><span class="comment"># 展现逻辑 SQL &amp; 真实 SQL</span></span><br><span class="line"><span class="attr">props:</span></span><br><span class="line">  <span class="attr">sql-show:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure></div>
+<h2 id="userService业务代码"><a href="#userService业务代码" class="headerlink" title="userService业务代码"></a>userService业务代码</h2><div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 用户接口实现层</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="meta">@RequiredArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserServiceImpl</span> <span class="keyword">extends</span> <span class="title class_">ServiceImpl</span>&lt;UserMapper, UserDO&gt; <span class="keyword">implements</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RBloomFilter&lt;String&gt; userRegisterCachePenetrationBloomFilter;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RedissonClient redissonClient;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserRespDTO <span class="title function_">getUserByUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; queryWrapper = Wrappers.lambdaQuery(UserDO.class).eq(UserDO::getUsername, username);</span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">userDO</span> <span class="operator">=</span> baseMapper.selectOne(queryWrapper);</span><br><span class="line">        <span class="keyword">if</span> (userDO == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(UserErrorCode.USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">UserRespDTO</span> <span class="variable">result</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserRespDTO</span>();</span><br><span class="line">        BeanUtils.copyProperties(userDO, result);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">hashUsername</span><span class="params">(String username)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> userRegisterCachePenetrationBloomFilter.contains(username);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">register</span><span class="params">(UserRegisterReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (hashUsername(requestParam.getUsername())) &#123;</span><br><span class="line">            <span class="comment">//存在</span></span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (lock.tryLock()) &#123;</span><br><span class="line">                <span class="comment">//获取锁成功</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">insert</span> <span class="operator">=</span> baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));</span><br><span class="line">                <span class="keyword">if</span> (insert &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_SAVE_ERROR);</span><br><span class="line">                &#125;</span><br><span class="line">                userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_EXIST);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">(UserUpdateReqDTO requestParam)</span> &#123;</span><br><span class="line">        <span class="comment">//TODO 验证修改用户是不是当前用户</span></span><br><span class="line">        LambdaUpdateWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaUpdate(UserDO.class).eq(UserDO::getUsername, requestParam.getUsername());</span><br><span class="line">        baseMapper.update(BeanUtil.toBean(requestParam, UserDO.class), wrapper);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> UserLoginRespDTO <span class="title function_">login</span><span class="params">(UserLoginReqDTO requestParam)</span> &#123;</span><br><span class="line">        LambdaQueryWrapper&lt;UserDO&gt; wrapper = Wrappers.lambdaQuery(UserDO.class)</span><br><span class="line">                .eq(UserDO::getUsername, requestParam.getUsername())</span><br><span class="line">                .eq(UserDO::getPassword, requestParam.getPassword())</span><br><span class="line">                .eq(UserDO::getDelFlag, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="type">UserDO</span> <span class="variable">result</span> <span class="operator">=</span> baseMapper.selectOne(wrapper);</span><br><span class="line">        System.out.println(result);</span><br><span class="line">        <span class="keyword">if</span>(result == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_NULL);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.hasKey(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername());</span><br><span class="line">        <span class="keyword">if</span>(BooleanUtil.isTrue(hasLogin)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(USER_LOGIN_ERROR);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Hash</span></span><br><span class="line"><span class="comment">         * Key: 用户名</span></span><br><span class="line"><span class="comment">         * Value:</span></span><br><span class="line"><span class="comment">         *  key: token 用户凭证</span></span><br><span class="line"><span class="comment">         *  val: Json 字符串（用户信息）</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> UUID.randomUUID().toString();</span><br><span class="line">        stringRedisTemplate.opsForHash().put(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), token, JSON.toJSONString(result));</span><br><span class="line">        stringRedisTemplate.expire(<span class="string">&quot;login_&quot;</span> + requestParam.getUsername(), Duration.ofMinutes(<span class="number">30L</span>));</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">UserLoginRespDTO</span>(token);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Boolean <span class="title function_">checkLogin</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="type">Boolean</span> <span class="variable">hasLogin</span> <span class="operator">=</span> stringRedisTemplate.opsForHash().hasKey(<span class="string">&quot;login_&quot;</span> + username, token);</span><br><span class="line">        <span class="keyword">return</span> BooleanUtil.isTrue(hasLogin);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">logout</span><span class="params">(String username, String token)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(checkLogin(username, token)) &#123;</span><br><span class="line">            stringRedisTemplate.delete(<span class="string">&quot;login_&quot;</span> + username);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ClientException</span>(<span class="string">&quot;用户未登录或token异常&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+
+
+
+
+
+]]></content>
+      <tags>
+        <tag>Saas项目</tag>
       </tags>
   </entry>
   <entry>
@@ -689,483 +689,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Spring Cloud-Nacos篇(注册中心)</title>
-    <url>/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
-    <content><![CDATA[<h2 id="认识-Nacos"><a href="#认识-Nacos" class="headerlink" title="认识 Nacos"></a>认识 Nacos</h2><p><a class="link"   href="https://nacos.io/" >Nacos <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>是阿里巴巴的产品，现在是<a class="link"   href="https://spring.io/projects/spring-cloud" >SpringCloud <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中的一个组件。相比<a class="link"   href="https://github.com/Netflix/eureka" >Eureka <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>功能更加丰富，在国内受欢迎程度较高。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_01.png"
-                      alt="nacos"
-                ></p>
-<h2 id="服务注册到-nacos"><a href="#服务注册到-nacos" class="headerlink" title="服务注册到 nacos"></a>服务注册到 nacos</h2><p>Nacos 是 SpringCloudAlibaba 的组件，而 SpringCloudAlibaba 也遵循 SpringCloud 中定义的服务注册、服务发现规范。因此使用 Nacos 和使用 Eureka 对于微服务来说，并没有太大区别。</p>
-<h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>在 cloud-demo 父工程的 pom 文件中的<code>&lt;dependencyManagement&gt;</code>中引入 SpringCloudAlibaba 的依赖：</p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-alibaba-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.2.6.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<p>然后在 user-service 和 order-service 中的 pom 文件中引入 nacos-discovery 依赖：</p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-discovery<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<h3 id="配置-nacos-地址"><a href="#配置-nacos-地址" class="headerlink" title="配置 nacos 地址"></a>配置 nacos 地址</h3><p>在 user-service 和 order-service 的 application.yml 中添加 nacos 地址：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br></pre></td></tr></table></figure></div>
-
-<h3 id="重启"><a href="#重启" class="headerlink" title="重启"></a>重启</h3><p>重启微服务后，登录 nacos 管理页面，可以看到微服务信息：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_02.png"
-                      alt="nacos"
-                ></p>
-<h2 id="服务分级存储模型"><a href="#服务分级存储模型" class="headerlink" title="服务分级存储模型"></a>服务分级存储模型</h2><p>一个服务可以包含多个集群，如杭州、上海，每个集群下可以有多个实例，形成分级模型，如图：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_03.png"
-                      alt="cluster"
-                ><br>微服务互相访问时，应该尽可能访问同集群实例，因为本地访问速度更快。当本集群内不可用时，才访问其它集群。</p>
-<h3 id="给-user-service-配置集群"><a href="#给-user-service-配置集群" class="headerlink" title="给 user-service 配置集群"></a>给 user-service 配置集群</h3><div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
-
-<h3 id="同集群优先的负载均衡"><a href="#同集群优先的负载均衡" class="headerlink" title="同集群优先的负载均衡"></a>同集群优先的负载均衡</h3><p>默认的<code>ZoneAvoidanceRule</code>并不能实现根据同集群优先来实现负载均衡。</p>
-<p>因此 Nacos 中提供了一个<code>NacosRule</code>的实现，可以优先从同集群中挑选实例。<br>1）给 order-service 配置集群信息<br>修改 order-service 的 application.yml 文件，添加集群配置：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
-
-<p>2）修改负载均衡规则<br>修改 order-service 的 application.yml 文件，修改负载均衡规则：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.alibaba.cloud.nacos.ribbon.NacosRule</span> <span class="comment"># 负载均衡规则</span></span><br></pre></td></tr></table></figure></div>
-
-<h2 id="权重配置"><a href="#权重配置" class="headerlink" title="权重配置"></a>权重配置</h2><p>实际部署中会出现这样的场景：</p>
-<p>服务器设备性能有差异，部分实例所在机器性能较好，另一些较差，我们希望性能好的机器承担更多的用户请求。<br>在 nacos 控制台，找到 user-service 的实例列表，点击编辑，即可修改权重：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_04.png"
-                      alt="loadBalance"
-                ></p>
-<h2 id="环境隔离"><a href="#环境隔离" class="headerlink" title="环境隔离"></a>环境隔离</h2><p>Nacos 提供了 namespace 来实现环境隔离功能。</p>
-<ul>
-<li>nacos 中可以有多个 namespace</li>
-<li>namespace 下可以有 group、service 等</li>
-<li>不同 namespace 之间相互隔离，例如不同 namespace 的服务互相不可见<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_05.png"
-                      alt="namespace"
-                ></li>
-</ul>
-<h3 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h3><p>默认情况下，所有 service、data、group 都在同一个 namespace，名为 public：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_06.png"
-                      alt="namespace"
-                ><br>我们可以点击页面新增按钮，添加一个 namespace：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_07.png"
-                      alt="namespace"
-                ><br>然后，填写表单：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_08.png"
-                      alt="namespace"
-                ><br>就能在页面看到一个新的 namespace：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_09.png"
-                      alt="namespace"
-                ></p>
-<h3 id="给微服务配置-namespace"><a href="#给微服务配置-namespace" class="headerlink" title="给微服务配置 namespace"></a>给微服务配置 namespace</h3><p>给微服务配置 namespace 只能通过修改配置来实现。</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span></span><br><span class="line">        <span class="attr">namespace:</span> <span class="string">492a7d5d-237b-46a1-a99a-fa8e98e4b0f9</span> <span class="comment"># 命名空间，填ID</span></span><br></pre></td></tr></table></figure></div>
-
-<h2 id="Nacos-与-Eureka-的区别"><a href="#Nacos-与-Eureka-的区别" class="headerlink" title="Nacos 与 Eureka 的区别"></a>Nacos 与 Eureka 的区别</h2><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_10.png"
-                      alt="namespace"
-                ></p>
-<ul>
-<li><p>Nacos 与 eureka 的共同点</p>
-<ul>
-<li>都支持服务注册和服务拉取</li>
-<li>都支持服务提供者心跳方式做健康检测</li>
-</ul>
-</li>
-<li><p>Nacos 与 Eureka 的区别</p>
-<ul>
-<li>Nacos 支持服务端主动检测提供者状态：临时实例采用心跳模式，非临时实例采用主动检测模式</li>
-<li>临时实例心跳不正常会被剔除，非临时实例则不会被剔除</li>
-<li>Nacos 支持服务列表变更的消息推送模式，服务列表更新更及时</li>
-<li>Nacos 集群默认采用 AP 方式，当集群中存在非临时实例时，采用 CP 模式；Eureka 采用 AP 方式</li>
-</ul>
-</li>
-</ul>
-<h2 id="Nacos-配置管理"><a href="#Nacos-配置管理" class="headerlink" title="Nacos 配置管理"></a>Nacos 配置管理</h2><h3 id="统一配置管理"><a href="#统一配置管理" class="headerlink" title="统一配置管理"></a>统一配置管理</h3><p>当微服务部署的实例越来越多，达到数十、数百时，逐个修改微服务配置就会让人抓狂，而且很容易出错。我们需要一种统一配置管理方案，可以集中管理所有实例的配置。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_11.png"
-                      alt="config"
-                ></p>
-<h4 id="在-nacos-中添加配置文件"><a href="#在-nacos-中添加配置文件" class="headerlink" title="在 nacos 中添加配置文件"></a>在 nacos 中添加配置文件</h4><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_12.png"
-                      alt="config"
-                ><br>然后在弹出的表单中，填写配置信息：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_13.png"
-                      alt="config"
-                ><br><em>注意：项目的核心配置，需要热更新的配置才有放到 nacos 管理的必要。基本不会变更的一些配置还是保存在微服务本地比较好。</em></p>
-<h4 id="从微服务拉取配置"><a href="#从微服务拉取配置" class="headerlink" title="从微服务拉取配置"></a>从微服务拉取配置</h4><p>微服务要拉取 nacos 中管理的配置，并且与本地的 application.yml 配置合并，才能完成项目启动。</p>
-<p>但如果尚未读取 application.yml，又如何得知 nacos 地址呢？</p>
-<p>因此 spring 引入了一种新的配置文件：bootstrap.yaml 文件，会在 application.yml 之前被读取，流程如下：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_14.png"
-                      alt="config"
-                ><br>1）引入 nacos-config 依赖</p>
-<p>首先，在 user-service 服务中，引入 nacos-config 的客户端依赖：</p>
-<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--nacos配置管理依赖--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
-
-<p>2）添加 bootstrap.yaml</p>
-<p>然后，在 user-service 中添加一个 bootstrap.yaml 文件，内容如下：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">userservice</span> <span class="comment"># 服务名称</span></span><br><span class="line">  <span class="attr">profiles:</span></span><br><span class="line">    <span class="attr">active:</span> <span class="string">dev</span> <span class="comment">#开发环境，这里是dev</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span> <span class="comment"># Nacos地址</span></span><br><span class="line">      <span class="attr">config:</span></span><br><span class="line">        <span class="attr">file-extension:</span> <span class="string">yaml</span> <span class="comment"># 文件后缀名</span></span><br></pre></td></tr></table></figure></div>
-
-<p>本例中，就是去读取<code>userservice-dev.yaml</code>：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_15.png"
-                      alt="config"
-                ><br>3）读取 nacos 配置</p>
-<p>在 user-service 中的 UserController 中添加业务逻辑，读取 pattern.dateformat 配置：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_16.png"
-                      alt="config"
-                ><br>在页面访问，可以看到效果：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_17.png"
-                      alt="config"
-                ></p>
-<h3 id="配置热更新"><a href="#配置热更新" class="headerlink" title="配置热更新"></a>配置热更新</h3><p>我们最终的目的，是修改 nacos 中的配置后，微服务中无需重启即可让配置生效，也就是<strong>配置热更新</strong>。</p>
-<p>要实现配置热更新，可以使用两种方式：</p>
-<h4 id="方式一"><a href="#方式一" class="headerlink" title="方式一"></a>方式一</h4><p>在@Value 注入的变量所在类上添加注解@RefreshScope：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_18.png"
-                      alt="hotUpdate"
-                ></p>
-<h4 id="方式二"><a href="#方式二" class="headerlink" title="方式二"></a>方式二</h4><p>使用@ConfigurationProperties 注解代替@Value 注解。</p>
-<p>在 user-service 服务中，添加一个类，读取 patterrn.dateformat 属性：</p>
-<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> cn.itcast.user.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.context.properties.ConfigurationProperties;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@ConfigurationProperties(prefix = &quot;pattern&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatternProperties</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String dateformat;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
-
-<p>在 UserController 中使用这个类代替@Value：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_19.png"
-                      alt="hotUpdate"
-                ></p>
-<h3 id="配置共享"><a href="#配置共享" class="headerlink" title="配置共享"></a>配置共享</h3><p>其实微服务启动时，会去 nacos 读取多个配置文件，例如：</p>
-<ul>
-<li><p><code>[spring.application.name]-[spring.profiles.active].yaml</code>，例如：userservice-dev.yaml</p>
-</li>
-<li><p><code>[spring.application.name].yaml</code>，例如：userservice.yaml</p>
-</li>
-</ul>
-<p>而<code>[spring.application.name].yaml</code>不包含环境，因此可以被多个环境共享。</p>
-<h4 id="添加一个环境共享配置"><a href="#添加一个环境共享配置" class="headerlink" title="添加一个环境共享配置"></a>添加一个环境共享配置</h4><p>我们在 nacos 中添加一个 userservice.yaml 文件：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_20.png"
-                      alt="sharedEnv"
-                ></p>
-<h4 id="在-user-service-中读取共享配置"><a href="#在-user-service-中读取共享配置" class="headerlink" title="在 user-service 中读取共享配置"></a>在 user-service 中读取共享配置</h4><p>在 user-service 服务中，修改 PatternProperties 类，读取新添加的属性：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_21.png"
-                      alt="sharedEnv"
-                ><br>在 user-service 服务中，修改 UserController，添加一个方法：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_22.png"
-                      alt="sharedEnv"
-                ></p>
-<h4 id="运行两个-UserApplication，使用不同的-profile"><a href="#运行两个-UserApplication，使用不同的-profile" class="headerlink" title="运行两个 UserApplication，使用不同的 profile"></a>运行两个 UserApplication，使用不同的 profile</h4><p>修改 UserApplication2 这个启动项，改变其 profile 值：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_23.png"
-                      alt="JVMENV"
-                ><br>这样，UserApplication(8081)使用的 profile 是 dev，UserApplication2(8082)使用的 profile 是 test。</p>
-<p>启动 UserApplication 和 UserApplication2<br>访问<a class="link"   href="http://localhost:8081/user/prop" >http://localhost:8081/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_24.png"
-                      alt="JVMENV"
-                ><br>访问<a class="link"   href="http://localhost:8082/user/prop" >http://localhost:8082/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_25.png"
-                      alt="JVMENV"
-                ><br>可以看出来，不管是 dev，还是 test 环境，都读取到了 envSharedValue 这个属性的值。</p>
-<h4 id="配置共享的优先级"><a href="#配置共享的优先级" class="headerlink" title="配置共享的优先级"></a>配置共享的优先级</h4><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/nacos_26.png"
-                      alt="JVMENV"
-                ></p>
-]]></content>
-      <categories>
-        <category>学习</category>
-      </categories>
-      <tags>
-        <tag>Spring Cloud</tag>
-        <tag>Nacos</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Spring Cloud-Ribbon篇(负载均衡)</title>
-    <url>/2024/03/12/Spring-Cloud-Ribbon%E7%AF%87-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
-    <content><![CDATA[<h2 id="负载均衡原理"><a href="#负载均衡原理" class="headerlink" title="负载均衡原理"></a>负载均衡原理</h2><p>SpringCloud底层其实是利用了一个名为Ribbon的组件，来实现负载均衡功能的。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_01.png"
-                      alt="ribbon_01"
-                ></p>
-<p><strong>那么我们发出的请求明明是<a class="link"   href="http://userservice/user/1%EF%BC%8C%E6%80%8E%E4%B9%88%E5%8F%98%E6%88%90%E4%BA%86http://localhost:8081%E7%9A%84%E5%91%A2%EF%BC%9F" >http://userservice/user/1，怎么变成了http://localhost:8081的呢？ <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></strong></p>
-<h2 id="源码跟踪"><a href="#源码跟踪" class="headerlink" title="源码跟踪"></a>源码跟踪</h2><p>为什么我们只输入了service名称就可以访问了呢？之前还要获取ip和端口。</p>
-<p>显然有人帮我们根据service名称，获取到了服务实例的ip和端口。它就是<code>LoadBalancerInterceptor</code>，这个类会在对RestTemplate的请求进行拦截，然后从Eureka根据服务id获取服务列表，随后利用负载均衡算法得到真实的服务地址信息，替换服务id。</p>
-<p>我们进行源码跟踪：</p>
-<h3 id="LoadBalancerIntercepor"><a href="#LoadBalancerIntercepor" class="headerlink" title="LoadBalancerIntercepor"></a>LoadBalancerIntercepor</h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_02.png"
-                      alt="LoadBalancerIntercepor"
-                ><br>可以看到这里的intercept方法，拦截了用户的HttpRequest请求，然后做了几件事：</p>
-<ul>
-<li><code>request.getURI()</code>：获取请求uri，本例中就是 <a class="link"   href="http://user-service/user/8" >http://user-service/user/8 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
-<li><code>originalUri.getHost()</code>：获取uri路径的主机名，其实就是服务id，<code>user-service</code></li>
-<li><code>this.loadBalancer.execute()</code>：处理服务id，和用户请求。<br>这里的<code>this.loadBalancer</code>是<code>LoadBalancerClient</code>类型，我们继续跟入。</li>
-</ul>
-<h3 id="LoadBalancerClient"><a href="#LoadBalancerClient" class="headerlink" title="LoadBalancerClient"></a>LoadBalancerClient</h3><p>继续跟入execute方法：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_03.png"
-                      alt="LoadBalancerClient"
-                ><br>代码是这样的：</p>
-<ul>
-<li>getLoadBalancer(serviceId)：根据服务id获取ILoadBalancer，而ILoadBalancer会拿着服务id去eureka中获取服务列表并保存起来。</li>
-<li>getServer(loadBalancer)：利用内置的负载均衡算法，从服务列表中选择一个。本例中，可以看到获取了8082端口的服务<br>放行后，再次访问并跟踪，发现获取的是8081：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_04.png"
-                      alt="负载均衡"
-                ></li>
-</ul>
-<h3 id="负载均衡策略IRule"><a href="#负载均衡策略IRule" class="headerlink" title="负载均衡策略IRule"></a>负载均衡策略IRule</h3><p>在刚才的代码中，可以看到获取服务使通过一个<code>getServer</code>方法来做负载均衡:<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_04.png"
-                      alt="IRule"
-                ><br>我们继续跟入：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_05.png"
-                      alt="负载均衡"
-                ><br>继续跟踪源码chooseServer方法，发现这么一段代码：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_06.png"
-                      alt="chooseServer"
-                ><br>我们看看这个rule是谁：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_07.png"
-                      alt="DefaultRule"
-                ><br>这里的rule默认值是一个<code>RoundRobinRule</code>，也就是轮询</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_08.png"
-                      alt="DefaultRule"
-                ></p>
-<p>基本流程如下：</p>
-<ul>
-<li>拦截我们的RestTemplate请求<a class="link"   href="http://userservice/user/1" >http://userservice/user/1 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
-<li>RibbonLoadBalancerClient会从请求url中获取服务名称，也就是user-service</li>
-<li>DynamicServerListLoadBalancer根据user-service到eureka拉取服务列表</li>
-<li>eureka返回列表，localhost:8081、localhost:8082</li>
-<li>IRule利用内置负载均衡规则，从列表中选择一个，例如localhost:8081</li>
-<li>RibbonLoadBalancerClient修改请求地址，用localhost:8081替代userservice，得到<a class="link"   href="http://localhost:8081/user/1%EF%BC%8C%E5%8F%91%E8%B5%B7%E7%9C%9F%E5%AE%9E%E8%AF%B7%E6%B1%82" >http://localhost:8081/user/1，发起真实请求 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
-</ul>
-<h2 id="负载均衡策略"><a href="#负载均衡策略" class="headerlink" title="负载均衡策略"></a>负载均衡策略</h2><p>负载均衡的规则都定义在IRule接口中，而IRule有很多不同的实现类：<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/ribbon_08.png"
-                      alt="策略"
-                ><br>不同规则含义如下：</p>
-<table>
-<thead>
-<tr>
-<th><strong>内置负载均衡规则类</strong></th>
-<th><strong>规则描述</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>RoundRobinRule</td>
-<td>简单轮询服务列表来选择服务器。它是Ribbon默认的负载均衡规则。</td>
-</tr>
-<tr>
-<td>AvailabilityFilteringRule</td>
-<td>对以下两种服务器进行忽略：   （1）在默认情况下，这台服务器如果3次连接失败，这台服务器就会被设置为“短路”状态。短路状态将持续30秒，如果再次连接失败，短路的持续时间就会几何级地增加。  （2）并发数过高的服务器。如果一个服务器的并发连接数过高，配置了AvailabilityFilteringRule规则的客户端也会将其忽略。并发连接数的上限，可以由客户端的<clientName>.<clientConfigNameSpace>.ActiveConnectionsLimit属性进行配置。</td>
-</tr>
-<tr>
-<td>WeightedResponseTimeRule</td>
-<td>为每一个服务器赋予一个权重值。服务器响应时间越长，这个服务器的权重就越小。这个规则会随机选择服务器，这个权重值会影响服务器的选择。</td>
-</tr>
-<tr>
-<td><strong>ZoneAvoidanceRule</strong></td>
-<td>以区域可用的服务器为基础进行服务器的选择。使用Zone对服务器进行分类，这个Zone可以理解为一个机房、一个机架等。而后再对Zone内的多个服务做轮询。</td>
-</tr>
-<tr>
-<td>BestAvailableRule</td>
-<td>忽略那些短路的服务器，并选择并发数较低的服务器。</td>
-</tr>
-<tr>
-<td>RandomRule</td>
-<td>随机选择一个可用的服务器。</td>
-</tr>
-<tr>
-<td>RetryRule</td>
-<td>重试机制的选择逻辑</td>
-</tr>
-</tbody></table>
-<h3 id="自定义负载均衡策略"><a href="#自定义负载均衡策略" class="headerlink" title="自定义负载均衡策略"></a>自定义负载均衡策略</h3><p>通过定义IRule实现可以修改负载均衡规则，有两种方式：</p>
-<ol>
-<li>代码方式：在order-service中的OrderApplication类中，定义一个新的IRule：<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> IRule <span class="title function_">randomRule</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RandomRule</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
-<li>配置文件方式：在order-service的application.yml文件中，添加新的配置也可以修改规则：<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span> <span class="comment"># 给某个微服务配置负载均衡规则，这里是userservice服务</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.netflix.loadbalancer.RandomRule</span> <span class="comment"># 负载均衡规则 </span></span><br></pre></td></tr></table></figure></div>
-<strong>注意</strong>，一般用默认的负载均衡规则，不做修改。</li>
-</ol>
-<h2 id="饥饿加载"><a href="#饥饿加载" class="headerlink" title="饥饿加载"></a>饥饿加载</h2><p>Ribbon默认是采用懒加载，即第一次访问时才会去创建LoadBalanceClient，请求时间会很长。</p>
-<p>而饥饿加载则会在项目启动时创建，降低第一次访问的耗时，通过下面配置开启饥饿加载：</p>
-<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">ribbon:</span></span><br><span class="line">  <span class="attr">eager-load:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">clients:</span> <span class="string">userservice</span></span><br></pre></td></tr></table></figure></div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-]]></content>
-      <categories>
-        <category>学习</category>
-      </categories>
-      <tags>
-        <tag>Spring Cloud</tag>
-        <tag>Ribbon</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>算法学习(leetcode)</title>
-    <url>/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/</url>
-    <content><![CDATA[<h1 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h1><h2 id="二分法"><a href="#二分法" class="headerlink" title="二分法"></a>二分法</h2><h3 id="LeetCode704-二分查找"><a href="#LeetCode704-二分查找" class="headerlink" title="LeetCode704.二分查找"></a><a class="link"   href="https://leetcode.cn/problems/binary-search/description/" >LeetCode704.二分查找 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_01.png"
-                     
-                ></p>
-<ul>
-<li>二分查找，注意边界即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">search</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> right = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">while</span> (left &lt; right) &#123;</span><br><span class="line">            <span class="type">int</span> mid = left + ((right - left)&gt;&gt;<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (nums[mid] == target) &#123;</span><br><span class="line">                <span class="keyword">return</span> mid;</span><br><span class="line">            &#125;<span class="keyword">else</span> <span class="keyword">if</span> (nums[mid] &lt; target) &#123;</span><br><span class="line">                left = mid + <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                right = mid;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="双指针"><a href="#双指针" class="headerlink" title="双指针"></a>双指针</h2><h3 id="LeetCode27-移除元素"><a href="#LeetCode27-移除元素" class="headerlink" title="LeetCode27.移除元素"></a><a class="link"   href="https://leetcode.cn/problems/remove-element/description/" >LeetCode27.移除元素 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_02.png"
-                     
-                ></p>
-<ul>
-<li>本题要求<strong>原地</strong>删除元素，并且不用管超出新长度后面的元素。所谓<strong>原地删除</strong>就是用后面的数覆盖前面的数，那么这题就可以使用双指针：当快指针指到<strong>target</strong>的时候，那么快指针就跳过，继续遍历；否则将快指针所指的值赋值给慢指针。最后慢指针下标就是新数组的长度<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking.cdn.bcebos.com/gifs/27.%E7%A7%BB%E9%99%A4%E5%85%83%E7%B4%A0-%E5%8F%8C%E6%8C%87%E9%92%88%E6%B3%95.gif"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">removeElement</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> val)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//定义左右指针</span></span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//当右指针不越界就一直循环</span></span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>())&#123;</span><br><span class="line">            <span class="comment">//找到target， 跳过</span></span><br><span class="line">            <span class="keyword">if</span> (nums[right] == val) &#123;</span><br><span class="line">                right++;;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//否则赋值</span></span><br><span class="line">            nums[left++] = nums[right++];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//返回长度</span></span><br><span class="line">        <span class="keyword">return</span> left;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h3 id="LeetCode977-有序数组的平方"><a href="#LeetCode977-有序数组的平方" class="headerlink" title="LeetCode977.有序数组的平方"></a><a class="link"   href="https://leetcode.cn/problems/squares-of-a-sorted-array/description/" >LeetCode977.有序数组的平方 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_03.png"
-                     
-                ></p>
-<ul>
-<li>这道题给出一个<code>非递减</code>的数组，希望我们返回一个<code>非递减的平方</code>数组，同时要求log(n)的时间复杂度,那么说明我们需要只遍历一遍数组.这时候可以使用双指针，从数组的左右两侧分别往中间遍历。因为这是<code>非递减</code>数组，所以将数组元素平方后，平方后较大数只会出现在数组两侧。只需要左右指针往中间遍历过程中比较较大数，然后把较大数从后往前放入<code>目标数组</code>即可。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking.cdn.bcebos.com/gifs/977.%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E7%9A%84%E5%B9%B3%E6%96%B9.gif"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">sortedSquares</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> size = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">result</span><span class="params">(size, <span class="number">0</span>)</span></span>;</span><br><span class="line">        <span class="type">int</span> index = size - <span class="number">1</span>;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;   <span class="comment">//左指针</span></span><br><span class="line">        <span class="type">int</span> right = size - <span class="number">1</span>;   <span class="comment">//右指针</span></span><br><span class="line">        <span class="keyword">while</span>(left &lt;= right) &#123;</span><br><span class="line">            <span class="comment">//左右指针比较，将较大数从后往前放入result数组</span></span><br><span class="line">            <span class="keyword">if</span>(<span class="built_in">pow</span>(nums[left], <span class="number">2</span>) &lt; <span class="built_in">pow</span>(nums[right], <span class="number">2</span>)) &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[right], <span class="number">2</span>);</span><br><span class="line">                right--;</span><br><span class="line">            &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[left], <span class="number">2</span>);</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="滑动窗口"><a href="#滑动窗口" class="headerlink" title="滑动窗口"></a>滑动窗口</h2><h3 id="LeetCode209-长度最小的子数组"><a href="#LeetCode209-长度最小的子数组" class="headerlink" title="LeetCode209.长度最小的子数组"></a><a class="link"   href="https://leetcode.cn/problems/minimum-size-subarray-sum/description/" >LeetCode209.长度最小的子数组 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_04.png"
-                     
-                ></p>
-<ul>
-<li>本题需要查找一个<code>总和</code>大于等于<code>target</code>的<code>最小子序列</code>。那么这题就可以使用滑动窗口，也是属于双指针的一种方法。让右指针往右探寻一个总和大于等于<code>target</code>的<code>子序列</code>。每当探寻到之后，将左指针依次往右移动，不断缩小左指针和右指针之间的<code>总和</code>，判断这个<code>总和</code>是否大于<code>target</code>：大于就<code>缩小窗口</code>(子序列长度)，左指针往右探寻最小<code>最小窗口</code>;小于就<code>扩大窗口</code>，右指针重复往右探寻<code>总和</code>大于<code>target</code>的<code>子序列</code>。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking.cdn.bcebos.com/gifs/209.%E9%95%BF%E5%BA%A6%E6%9C%80%E5%B0%8F%E7%9A%84%E5%AD%90%E6%95%B0%E7%BB%84.gif"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">minSubArrayLen</span><span class="params">(<span class="type">int</span> target, vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> result = INT_MAX;</span><br><span class="line">        <span class="type">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>()) &#123;</span><br><span class="line">            <span class="comment">//右指针往右探寻总和大于target的子序列</span></span><br><span class="line">            sum += nums[right++];</span><br><span class="line">            <span class="comment">//左指针往右缩小窗口，寻找最小窗口</span></span><br><span class="line">            <span class="keyword">while</span>(sum &gt;= target) &#123;</span><br><span class="line">                result = <span class="built_in">min</span>(result, right - left);</span><br><span class="line">                sum -= nums[left++];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果result没有被赋值过，说明右指针一直往右探寻到数组末尾都没找到满足的子序列</span></span><br><span class="line">        <span class="keyword">return</span> result == INT_MAX ? <span class="number">0</span> : result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h2 id="区间判定"><a href="#区间判定" class="headerlink" title="区间判定"></a>区间判定</h2><h3 id="LeetCode59-螺旋矩阵-II"><a href="#LeetCode59-螺旋矩阵-II" class="headerlink" title="LeetCode59.螺旋矩阵 II"></a><a class="link"   href="https://leetcode.cn/problems/spiral-matrix-ii/description/" >LeetCode59.螺旋矩阵 II <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_05.png"
-                     
-                ></p>
-<ul>
-<li>这道题写了不下三次了，每次我都写不出来，不知道如何下手，这次算基本搞清楚了。这题可以算是对<code>区间</code>的拆分，例如样例所示，当n&#x3D;3时，顺时针循环填充，最外圈有八个数。循环填充时，分为<code>上</code>、<code>右</code>、<code>下</code>、<code>左</code>，每次循环只填充两个数，将区间给拆分出来，<code>上</code>填充1、2; <code>右</code>填充3、4; <code>下</code>填充5、6; <code>左</code>填充7、8。这样就不会互相干扰了，并且每个指针循环结束后正好指向的是下一个循环的开始情况，不会存在越界情况。再往中间进一层也是同样的道理，不过需要判断到底有多少层，还有每次进一层的话，顺时针填充的<code>开始索引</code>和<code>结束索引</code>都要向内收缩一格。<br><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="https://code-thinking-1253855093.file.myqcloud.com/pics/20220922102236.png"
-                     
-                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">generateMatrix</span>(<span class="type">int</span> n) &#123;</span><br><span class="line">        vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">result</span>(n, <span class="built_in">vector</span>&lt;<span class="type">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">        <span class="comment">// loop表示有多少层</span></span><br><span class="line">        <span class="type">int</span> loop = n / <span class="number">2</span>;</span><br><span class="line">        <span class="comment">//每层遍历开始时的x ,y下标(左边界), 每进一层都要+1</span></span><br><span class="line">        <span class="type">int</span> x_start = <span class="number">0</span>, y_start = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//右边界需要收缩的量, 每进一层收缩的量都要+1</span></span><br><span class="line">        <span class="type">int</span> offset = <span class="number">1</span>; </span><br><span class="line">        <span class="comment">//顺时针填充的计数值</span></span><br><span class="line">        <span class="type">int</span> count = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">//每层遍历的x ,y下标  遵循上、右、下、左</span></span><br><span class="line">        <span class="type">int</span> x, y;</span><br><span class="line">        <span class="keyword">while</span>(loop--) &#123;</span><br><span class="line">            x = x_start;</span><br><span class="line">            y = y_start;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">//上的从左到右</span></span><br><span class="line">            <span class="keyword">for</span>(; y &lt; n - offset; y++)&#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右的从上到下</span></span><br><span class="line">            <span class="keyword">for</span>(; x &lt; n - offset; x++) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//下的从右到左</span></span><br><span class="line">            <span class="keyword">for</span>(; y &gt; y_start; y--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//左的从下到上</span></span><br><span class="line">            <span class="keyword">for</span>(; x &gt; x_start; x--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右边界收缩</span></span><br><span class="line">            offset++;</span><br><span class="line">            <span class="comment">//左边界收缩</span></span><br><span class="line">            x_start++;</span><br><span class="line">            y_start++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果层次是奇数，需要额外处理中心数据</span></span><br><span class="line">        <span class="keyword">if</span> (n % <span class="number">2</span>) &#123;</span><br><span class="line">            result[n / <span class="number">2</span>][n / <span class="number">2</span>] = count;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h1 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h1><h2 id="基础动规"><a href="#基础动规" class="headerlink" title="基础动规"></a>基础动规</h2><h3 id="LeetCode509-斐波那契数"><a href="#LeetCode509-斐波那契数" class="headerlink" title="LeetCode509.斐波那契数"></a><a class="link"   href="https://leetcode.cn/problems/fibonacci-number/description/" >LeetCode509.斐波那契数 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_dp_01.png"
-                     
-                ></p>
-<p><em>1.循环解法</em></p>
-<ul>
-<li>题目已经告诉递推公式为： F(n) &#x3D; F(n - 1) + F(n - 2)</li>
-<li>现在只需要初始化数组的前两个元素，后面依次循环即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="type">int</span> dp[<span class="number">31</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">2</span>; i &lt;= n;i++)&#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div>
-<em>2.递归解法</em></li>
-<li>确定递归终点：当F(n)递归到0 or 1时，直接返回。因为F(0) &#x3D; 0, F(1) &#x3D; 1;<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n &lt; <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">fib</span>(n - <span class="number">1</span>) + <span class="built_in">fib</span>(n - <span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-<h3 id="LeetCode70-爬楼梯"><a href="#LeetCode70-爬楼梯" class="headerlink" title="LeetCode70.爬楼梯"></a><a class="link"   href="https://leetcode.cn/problems/climbing-stairs/description/" >LeetCode70.爬楼梯 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
-                     lazyload
-                     src="/images/loading.svg"
-                     data-src="/assets/imgs/leetcode_dp_02.png"
-                     
-                ></p>
-<ul>
-<li>本题和斐波那契数列一样，当前阶f(n)可以从前一阶f(n - 1)和前两阶f(n - 2)达到。定义一个dp数组，记录达到当前阶的方法数量，那么dp[n] &#x3D; dp[n - 1] + dp[n - 2]<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> dp[<span class="number">55</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">climbStairs</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//初始化dp，第一阶和第二阶分别是1和2，表示有一种方法到达第一阶和两种方法到达第二阶</span></span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        dp[<span class="number">2</span>] = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">3</span>; i &lt;= n; i++) &#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>leetcode</tag>
-        <tag>算法</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>redis秒杀业务（分布式锁）</title>
     <url>/2024/02/14/redis%E7%A7%92%E6%9D%80%E4%B8%9A%E5%8A%A1%EF%BC%88%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%EF%BC%89/</url>
     <content><![CDATA[<h1 id="优惠券秒杀"><a href="#优惠券秒杀" class="headerlink" title="优惠券秒杀"></a>优惠券秒杀</h1><h2 id="一-生成全局唯一ID"><a href="#一-生成全局唯一ID" class="headerlink" title="一. 生成全局唯一ID"></a>一. 生成全局唯一ID</h2><h3 id="由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID"><a href="#由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID" class="headerlink" title="由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID"></a>由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID</h3><p> <img  
@@ -1453,6 +976,483 @@
       </categories>
       <tags>
         <tag>redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Cloud-Nacos篇(注册中心)</title>
+    <url>/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <content><![CDATA[<h2 id="认识-Nacos"><a href="#认识-Nacos" class="headerlink" title="认识 Nacos"></a>认识 Nacos</h2><p><a class="link"   href="https://nacos.io/" >Nacos <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>是阿里巴巴的产品，现在是<a class="link"   href="https://spring.io/projects/spring-cloud" >SpringCloud <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中的一个组件。相比<a class="link"   href="https://github.com/Netflix/eureka" >Eureka <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>功能更加丰富，在国内受欢迎程度较高。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_01.png"
+                      alt="nacos"
+                ></p>
+<h2 id="服务注册到-nacos"><a href="#服务注册到-nacos" class="headerlink" title="服务注册到 nacos"></a>服务注册到 nacos</h2><p>Nacos 是 SpringCloudAlibaba 的组件，而 SpringCloudAlibaba 也遵循 SpringCloud 中定义的服务注册、服务发现规范。因此使用 Nacos 和使用 Eureka 对于微服务来说，并没有太大区别。</p>
+<h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>在 cloud-demo 父工程的 pom 文件中的<code>&lt;dependencyManagement&gt;</code>中引入 SpringCloudAlibaba 的依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-alibaba-dependencies<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.2.6.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<p>然后在 user-service 和 order-service 中的 pom 文件中引入 nacos-discovery 依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-discovery<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="配置-nacos-地址"><a href="#配置-nacos-地址" class="headerlink" title="配置 nacos 地址"></a>配置 nacos 地址</h3><p>在 user-service 和 order-service 的 application.yml 中添加 nacos 地址：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="重启"><a href="#重启" class="headerlink" title="重启"></a>重启</h3><p>重启微服务后，登录 nacos 管理页面，可以看到微服务信息：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_02.png"
+                      alt="nacos"
+                ></p>
+<h2 id="服务分级存储模型"><a href="#服务分级存储模型" class="headerlink" title="服务分级存储模型"></a>服务分级存储模型</h2><p>一个服务可以包含多个集群，如杭州、上海，每个集群下可以有多个实例，形成分级模型，如图：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_03.png"
+                      alt="cluster"
+                ><br>微服务互相访问时，应该尽可能访问同集群实例，因为本地访问速度更快。当本集群内不可用时，才访问其它集群。</p>
+<h3 id="给-user-service-配置集群"><a href="#给-user-service-配置集群" class="headerlink" title="给 user-service 配置集群"></a>给 user-service 配置集群</h3><div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="同集群优先的负载均衡"><a href="#同集群优先的负载均衡" class="headerlink" title="同集群优先的负载均衡"></a>同集群优先的负载均衡</h3><p>默认的<code>ZoneAvoidanceRule</code>并不能实现根据同集群优先来实现负载均衡。</p>
+<p>因此 Nacos 中提供了一个<code>NacosRule</code>的实现，可以优先从同集群中挑选实例。<br>1）给 order-service 配置集群信息<br>修改 order-service 的 application.yml 文件，添加集群配置：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span> <span class="comment"># 集群名称</span></span><br></pre></td></tr></table></figure></div>
+
+<p>2）修改负载均衡规则<br>修改 order-service 的 application.yml 文件，修改负载均衡规则：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.alibaba.cloud.nacos.ribbon.NacosRule</span> <span class="comment"># 负载均衡规则</span></span><br></pre></td></tr></table></figure></div>
+
+<h2 id="权重配置"><a href="#权重配置" class="headerlink" title="权重配置"></a>权重配置</h2><p>实际部署中会出现这样的场景：</p>
+<p>服务器设备性能有差异，部分实例所在机器性能较好，另一些较差，我们希望性能好的机器承担更多的用户请求。<br>在 nacos 控制台，找到 user-service 的实例列表，点击编辑，即可修改权重：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_04.png"
+                      alt="loadBalance"
+                ></p>
+<h2 id="环境隔离"><a href="#环境隔离" class="headerlink" title="环境隔离"></a>环境隔离</h2><p>Nacos 提供了 namespace 来实现环境隔离功能。</p>
+<ul>
+<li>nacos 中可以有多个 namespace</li>
+<li>namespace 下可以有 group、service 等</li>
+<li>不同 namespace 之间相互隔离，例如不同 namespace 的服务互相不可见<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_05.png"
+                      alt="namespace"
+                ></li>
+</ul>
+<h3 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h3><p>默认情况下，所有 service、data、group 都在同一个 namespace，名为 public：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_06.png"
+                      alt="namespace"
+                ><br>我们可以点击页面新增按钮，添加一个 namespace：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_07.png"
+                      alt="namespace"
+                ><br>然后，填写表单：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_08.png"
+                      alt="namespace"
+                ><br>就能在页面看到一个新的 namespace：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_09.png"
+                      alt="namespace"
+                ></p>
+<h3 id="给微服务配置-namespace"><a href="#给微服务配置-namespace" class="headerlink" title="给微服务配置 namespace"></a>给微服务配置 namespace</h3><p>给微服务配置 namespace 只能通过修改配置来实现。</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span></span><br><span class="line">      <span class="attr">discovery:</span></span><br><span class="line">        <span class="attr">cluster-name:</span> <span class="string">HZ</span></span><br><span class="line">        <span class="attr">namespace:</span> <span class="string">492a7d5d-237b-46a1-a99a-fa8e98e4b0f9</span> <span class="comment"># 命名空间，填ID</span></span><br></pre></td></tr></table></figure></div>
+
+<h2 id="Nacos-与-Eureka-的区别"><a href="#Nacos-与-Eureka-的区别" class="headerlink" title="Nacos 与 Eureka 的区别"></a>Nacos 与 Eureka 的区别</h2><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_10.png"
+                      alt="namespace"
+                ></p>
+<ul>
+<li><p>Nacos 与 eureka 的共同点</p>
+<ul>
+<li>都支持服务注册和服务拉取</li>
+<li>都支持服务提供者心跳方式做健康检测</li>
+</ul>
+</li>
+<li><p>Nacos 与 Eureka 的区别</p>
+<ul>
+<li>Nacos 支持服务端主动检测提供者状态：临时实例采用心跳模式，非临时实例采用主动检测模式</li>
+<li>临时实例心跳不正常会被剔除，非临时实例则不会被剔除</li>
+<li>Nacos 支持服务列表变更的消息推送模式，服务列表更新更及时</li>
+<li>Nacos 集群默认采用 AP 方式，当集群中存在非临时实例时，采用 CP 模式；Eureka 采用 AP 方式</li>
+</ul>
+</li>
+</ul>
+<h2 id="Nacos-配置管理"><a href="#Nacos-配置管理" class="headerlink" title="Nacos 配置管理"></a>Nacos 配置管理</h2><h3 id="统一配置管理"><a href="#统一配置管理" class="headerlink" title="统一配置管理"></a>统一配置管理</h3><p>当微服务部署的实例越来越多，达到数十、数百时，逐个修改微服务配置就会让人抓狂，而且很容易出错。我们需要一种统一配置管理方案，可以集中管理所有实例的配置。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_11.png"
+                      alt="config"
+                ></p>
+<h4 id="在-nacos-中添加配置文件"><a href="#在-nacos-中添加配置文件" class="headerlink" title="在 nacos 中添加配置文件"></a>在 nacos 中添加配置文件</h4><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_12.png"
+                      alt="config"
+                ><br>然后在弹出的表单中，填写配置信息：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_13.png"
+                      alt="config"
+                ><br><em>注意：项目的核心配置，需要热更新的配置才有放到 nacos 管理的必要。基本不会变更的一些配置还是保存在微服务本地比较好。</em></p>
+<h4 id="从微服务拉取配置"><a href="#从微服务拉取配置" class="headerlink" title="从微服务拉取配置"></a>从微服务拉取配置</h4><p>微服务要拉取 nacos 中管理的配置，并且与本地的 application.yml 配置合并，才能完成项目启动。</p>
+<p>但如果尚未读取 application.yml，又如何得知 nacos 地址呢？</p>
+<p>因此 spring 引入了一种新的配置文件：bootstrap.yaml 文件，会在 application.yml 之前被读取，流程如下：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_14.png"
+                      alt="config"
+                ><br>1）引入 nacos-config 依赖</p>
+<p>首先，在 user-service 服务中，引入 nacos-config 的客户端依赖：</p>
+<div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!--nacos配置管理依赖--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba.cloud<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-cloud-starter-alibaba-nacos-config<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
+
+<p>2）添加 bootstrap.yaml</p>
+<p>然后，在 user-service 中添加一个 bootstrap.yaml 文件，内容如下：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">spring:</span></span><br><span class="line">  <span class="attr">application:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">userservice</span> <span class="comment"># 服务名称</span></span><br><span class="line">  <span class="attr">profiles:</span></span><br><span class="line">    <span class="attr">active:</span> <span class="string">dev</span> <span class="comment">#开发环境，这里是dev</span></span><br><span class="line">  <span class="attr">cloud:</span></span><br><span class="line">    <span class="attr">nacos:</span></span><br><span class="line">      <span class="attr">server-addr:</span> <span class="string">localhost:8848</span> <span class="comment"># Nacos地址</span></span><br><span class="line">      <span class="attr">config:</span></span><br><span class="line">        <span class="attr">file-extension:</span> <span class="string">yaml</span> <span class="comment"># 文件后缀名</span></span><br></pre></td></tr></table></figure></div>
+
+<p>本例中，就是去读取<code>userservice-dev.yaml</code>：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_15.png"
+                      alt="config"
+                ><br>3）读取 nacos 配置</p>
+<p>在 user-service 中的 UserController 中添加业务逻辑，读取 pattern.dateformat 配置：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_16.png"
+                      alt="config"
+                ><br>在页面访问，可以看到效果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_17.png"
+                      alt="config"
+                ></p>
+<h3 id="配置热更新"><a href="#配置热更新" class="headerlink" title="配置热更新"></a>配置热更新</h3><p>我们最终的目的，是修改 nacos 中的配置后，微服务中无需重启即可让配置生效，也就是<strong>配置热更新</strong>。</p>
+<p>要实现配置热更新，可以使用两种方式：</p>
+<h4 id="方式一"><a href="#方式一" class="headerlink" title="方式一"></a>方式一</h4><p>在@Value 注入的变量所在类上添加注解@RefreshScope：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_18.png"
+                      alt="hotUpdate"
+                ></p>
+<h4 id="方式二"><a href="#方式二" class="headerlink" title="方式二"></a>方式二</h4><p>使用@ConfigurationProperties 注解代替@Value 注解。</p>
+<p>在 user-service 服务中，添加一个类，读取 patterrn.dateformat 属性：</p>
+<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> cn.itcast.user.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.context.properties.ConfigurationProperties;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@ConfigurationProperties(prefix = &quot;pattern&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PatternProperties</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String dateformat;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>在 UserController 中使用这个类代替@Value：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_19.png"
+                      alt="hotUpdate"
+                ></p>
+<h3 id="配置共享"><a href="#配置共享" class="headerlink" title="配置共享"></a>配置共享</h3><p>其实微服务启动时，会去 nacos 读取多个配置文件，例如：</p>
+<ul>
+<li><p><code>[spring.application.name]-[spring.profiles.active].yaml</code>，例如：userservice-dev.yaml</p>
+</li>
+<li><p><code>[spring.application.name].yaml</code>，例如：userservice.yaml</p>
+</li>
+</ul>
+<p>而<code>[spring.application.name].yaml</code>不包含环境，因此可以被多个环境共享。</p>
+<h4 id="添加一个环境共享配置"><a href="#添加一个环境共享配置" class="headerlink" title="添加一个环境共享配置"></a>添加一个环境共享配置</h4><p>我们在 nacos 中添加一个 userservice.yaml 文件：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_20.png"
+                      alt="sharedEnv"
+                ></p>
+<h4 id="在-user-service-中读取共享配置"><a href="#在-user-service-中读取共享配置" class="headerlink" title="在 user-service 中读取共享配置"></a>在 user-service 中读取共享配置</h4><p>在 user-service 服务中，修改 PatternProperties 类，读取新添加的属性：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_21.png"
+                      alt="sharedEnv"
+                ><br>在 user-service 服务中，修改 UserController，添加一个方法：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_22.png"
+                      alt="sharedEnv"
+                ></p>
+<h4 id="运行两个-UserApplication，使用不同的-profile"><a href="#运行两个-UserApplication，使用不同的-profile" class="headerlink" title="运行两个 UserApplication，使用不同的 profile"></a>运行两个 UserApplication，使用不同的 profile</h4><p>修改 UserApplication2 这个启动项，改变其 profile 值：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_23.png"
+                      alt="JVMENV"
+                ><br>这样，UserApplication(8081)使用的 profile 是 dev，UserApplication2(8082)使用的 profile 是 test。</p>
+<p>启动 UserApplication 和 UserApplication2<br>访问<a class="link"   href="http://localhost:8081/user/prop" >http://localhost:8081/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_24.png"
+                      alt="JVMENV"
+                ><br>访问<a class="link"   href="http://localhost:8082/user/prop" >http://localhost:8082/user/prop <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，结果：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_25.png"
+                      alt="JVMENV"
+                ><br>可以看出来，不管是 dev，还是 test 环境，都读取到了 envSharedValue 这个属性的值。</p>
+<h4 id="配置共享的优先级"><a href="#配置共享的优先级" class="headerlink" title="配置共享的优先级"></a>配置共享的优先级</h4><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/nacos_26.png"
+                      alt="JVMENV"
+                ></p>
+]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
+      <tags>
+        <tag>Spring Cloud</tag>
+        <tag>Nacos</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>算法学习(leetcode)</title>
+    <url>/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/</url>
+    <content><![CDATA[<h1 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h1><h2 id="二分法"><a href="#二分法" class="headerlink" title="二分法"></a>二分法</h2><h3 id="LeetCode704-二分查找"><a href="#LeetCode704-二分查找" class="headerlink" title="LeetCode704.二分查找"></a><a class="link"   href="https://leetcode.cn/problems/binary-search/description/" >LeetCode704.二分查找 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_01.png"
+                     
+                ></p>
+<ul>
+<li>二分查找，注意边界即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">search</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> right = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">while</span> (left &lt; right) &#123;</span><br><span class="line">            <span class="type">int</span> mid = left + ((right - left)&gt;&gt;<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (nums[mid] == target) &#123;</span><br><span class="line">                <span class="keyword">return</span> mid;</span><br><span class="line">            &#125;<span class="keyword">else</span> <span class="keyword">if</span> (nums[mid] &lt; target) &#123;</span><br><span class="line">                left = mid + <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                right = mid;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="双指针"><a href="#双指针" class="headerlink" title="双指针"></a>双指针</h2><h3 id="LeetCode27-移除元素"><a href="#LeetCode27-移除元素" class="headerlink" title="LeetCode27.移除元素"></a><a class="link"   href="https://leetcode.cn/problems/remove-element/description/" >LeetCode27.移除元素 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_02.png"
+                     
+                ></p>
+<ul>
+<li>本题要求<strong>原地</strong>删除元素，并且不用管超出新长度后面的元素。所谓<strong>原地删除</strong>就是用后面的数覆盖前面的数，那么这题就可以使用双指针：当快指针指到<strong>target</strong>的时候，那么快指针就跳过，继续遍历；否则将快指针所指的值赋值给慢指针。最后慢指针下标就是新数组的长度<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking.cdn.bcebos.com/gifs/27.%E7%A7%BB%E9%99%A4%E5%85%83%E7%B4%A0-%E5%8F%8C%E6%8C%87%E9%92%88%E6%B3%95.gif"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">removeElement</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums, <span class="type">int</span> val)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//定义左右指针</span></span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//当右指针不越界就一直循环</span></span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>())&#123;</span><br><span class="line">            <span class="comment">//找到target， 跳过</span></span><br><span class="line">            <span class="keyword">if</span> (nums[right] == val) &#123;</span><br><span class="line">                right++;;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//否则赋值</span></span><br><span class="line">            nums[left++] = nums[right++];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//返回长度</span></span><br><span class="line">        <span class="keyword">return</span> left;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h3 id="LeetCode977-有序数组的平方"><a href="#LeetCode977-有序数组的平方" class="headerlink" title="LeetCode977.有序数组的平方"></a><a class="link"   href="https://leetcode.cn/problems/squares-of-a-sorted-array/description/" >LeetCode977.有序数组的平方 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_03.png"
+                     
+                ></p>
+<ul>
+<li>这道题给出一个<code>非递减</code>的数组，希望我们返回一个<code>非递减的平方</code>数组，同时要求log(n)的时间复杂度,那么说明我们需要只遍历一遍数组.这时候可以使用双指针，从数组的左右两侧分别往中间遍历。因为这是<code>非递减</code>数组，所以将数组元素平方后，平方后较大数只会出现在数组两侧。只需要左右指针往中间遍历过程中比较较大数，然后把较大数从后往前放入<code>目标数组</code>即可。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking.cdn.bcebos.com/gifs/977.%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E7%9A%84%E5%B9%B3%E6%96%B9.gif"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">sortedSquares</span><span class="params">(vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> size = nums.<span class="built_in">size</span>();</span><br><span class="line">        <span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">result</span><span class="params">(size, <span class="number">0</span>)</span></span>;</span><br><span class="line">        <span class="type">int</span> index = size - <span class="number">1</span>;</span><br><span class="line">        <span class="type">int</span> left = <span class="number">0</span>;   <span class="comment">//左指针</span></span><br><span class="line">        <span class="type">int</span> right = size - <span class="number">1</span>;   <span class="comment">//右指针</span></span><br><span class="line">        <span class="keyword">while</span>(left &lt;= right) &#123;</span><br><span class="line">            <span class="comment">//左右指针比较，将较大数从后往前放入result数组</span></span><br><span class="line">            <span class="keyword">if</span>(<span class="built_in">pow</span>(nums[left], <span class="number">2</span>) &lt; <span class="built_in">pow</span>(nums[right], <span class="number">2</span>)) &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[right], <span class="number">2</span>);</span><br><span class="line">                right--;</span><br><span class="line">            &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">                result[index--] = <span class="built_in">pow</span>(nums[left], <span class="number">2</span>);</span><br><span class="line">                left++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="滑动窗口"><a href="#滑动窗口" class="headerlink" title="滑动窗口"></a>滑动窗口</h2><h3 id="LeetCode209-长度最小的子数组"><a href="#LeetCode209-长度最小的子数组" class="headerlink" title="LeetCode209.长度最小的子数组"></a><a class="link"   href="https://leetcode.cn/problems/minimum-size-subarray-sum/description/" >LeetCode209.长度最小的子数组 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_04.png"
+                     
+                ></p>
+<ul>
+<li>本题需要查找一个<code>总和</code>大于等于<code>target</code>的<code>最小子序列</code>。那么这题就可以使用滑动窗口，也是属于双指针的一种方法。让右指针往右探寻一个总和大于等于<code>target</code>的<code>子序列</code>。每当探寻到之后，将左指针依次往右移动，不断缩小左指针和右指针之间的<code>总和</code>，判断这个<code>总和</code>是否大于<code>target</code>：大于就<code>缩小窗口</code>(子序列长度)，左指针往右探寻最小<code>最小窗口</code>;小于就<code>扩大窗口</code>，右指针重复往右探寻<code>总和</code>大于<code>target</code>的<code>子序列</code>。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking.cdn.bcebos.com/gifs/209.%E9%95%BF%E5%BA%A6%E6%9C%80%E5%B0%8F%E7%9A%84%E5%AD%90%E6%95%B0%E7%BB%84.gif"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">minSubArrayLen</span><span class="params">(<span class="type">int</span> target, vector&lt;<span class="type">int</span>&gt;&amp; nums)</span> </span>&#123;</span><br><span class="line">        <span class="type">int</span> result = INT_MAX;</span><br><span class="line">        <span class="type">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> left, right = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>(right &lt; nums.<span class="built_in">size</span>()) &#123;</span><br><span class="line">            <span class="comment">//右指针往右探寻总和大于target的子序列</span></span><br><span class="line">            sum += nums[right++];</span><br><span class="line">            <span class="comment">//左指针往右缩小窗口，寻找最小窗口</span></span><br><span class="line">            <span class="keyword">while</span>(sum &gt;= target) &#123;</span><br><span class="line">                result = <span class="built_in">min</span>(result, right - left);</span><br><span class="line">                sum -= nums[left++];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果result没有被赋值过，说明右指针一直往右探寻到数组末尾都没找到满足的子序列</span></span><br><span class="line">        <span class="keyword">return</span> result == INT_MAX ? <span class="number">0</span> : result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h2 id="区间判定"><a href="#区间判定" class="headerlink" title="区间判定"></a>区间判定</h2><h3 id="LeetCode59-螺旋矩阵-II"><a href="#LeetCode59-螺旋矩阵-II" class="headerlink" title="LeetCode59.螺旋矩阵 II"></a><a class="link"   href="https://leetcode.cn/problems/spiral-matrix-ii/description/" >LeetCode59.螺旋矩阵 II <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_05.png"
+                     
+                ></p>
+<ul>
+<li>这道题写了不下三次了，每次我都写不出来，不知道如何下手，这次算基本搞清楚了。这题可以算是对<code>区间</code>的拆分，例如样例所示，当n&#x3D;3时，顺时针循环填充，最外圈有八个数。循环填充时，分为<code>上</code>、<code>右</code>、<code>下</code>、<code>左</code>，每次循环只填充两个数，将区间给拆分出来，<code>上</code>填充1、2; <code>右</code>填充3、4; <code>下</code>填充5、6; <code>左</code>填充7、8。这样就不会互相干扰了，并且每个指针循环结束后正好指向的是下一个循环的开始情况，不会存在越界情况。再往中间进一层也是同样的道理，不过需要判断到底有多少层，还有每次进一层的话，顺时针填充的<code>开始索引</code>和<code>结束索引</code>都要向内收缩一格。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="https://code-thinking-1253855093.file.myqcloud.com/pics/20220922102236.png"
+                     
+                ><div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">generateMatrix</span>(<span class="type">int</span> n) &#123;</span><br><span class="line">        vector&lt;vector&lt;<span class="type">int</span>&gt;&gt; <span class="built_in">result</span>(n, <span class="built_in">vector</span>&lt;<span class="type">int</span>&gt;(n, <span class="number">0</span>));</span><br><span class="line">        <span class="comment">// loop表示有多少层</span></span><br><span class="line">        <span class="type">int</span> loop = n / <span class="number">2</span>;</span><br><span class="line">        <span class="comment">//每层遍历开始时的x ,y下标(左边界), 每进一层都要+1</span></span><br><span class="line">        <span class="type">int</span> x_start = <span class="number">0</span>, y_start = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//右边界需要收缩的量, 每进一层收缩的量都要+1</span></span><br><span class="line">        <span class="type">int</span> offset = <span class="number">1</span>; </span><br><span class="line">        <span class="comment">//顺时针填充的计数值</span></span><br><span class="line">        <span class="type">int</span> count = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">//每层遍历的x ,y下标  遵循上、右、下、左</span></span><br><span class="line">        <span class="type">int</span> x, y;</span><br><span class="line">        <span class="keyword">while</span>(loop--) &#123;</span><br><span class="line">            x = x_start;</span><br><span class="line">            y = y_start;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">//上的从左到右</span></span><br><span class="line">            <span class="keyword">for</span>(; y &lt; n - offset; y++)&#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右的从上到下</span></span><br><span class="line">            <span class="keyword">for</span>(; x &lt; n - offset; x++) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//下的从右到左</span></span><br><span class="line">            <span class="keyword">for</span>(; y &gt; y_start; y--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//左的从下到上</span></span><br><span class="line">            <span class="keyword">for</span>(; x &gt; x_start; x--) &#123;</span><br><span class="line">                result[x][y] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//右边界收缩</span></span><br><span class="line">            offset++;</span><br><span class="line">            <span class="comment">//左边界收缩</span></span><br><span class="line">            x_start++;</span><br><span class="line">            y_start++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//如果层次是奇数，需要额外处理中心数据</span></span><br><span class="line">        <span class="keyword">if</span> (n % <span class="number">2</span>) &#123;</span><br><span class="line">            result[n / <span class="number">2</span>][n / <span class="number">2</span>] = count;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h1 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h1><h2 id="基础动规"><a href="#基础动规" class="headerlink" title="基础动规"></a>基础动规</h2><h3 id="LeetCode509-斐波那契数"><a href="#LeetCode509-斐波那契数" class="headerlink" title="LeetCode509.斐波那契数"></a><a class="link"   href="https://leetcode.cn/problems/fibonacci-number/description/" >LeetCode509.斐波那契数 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_dp_01.png"
+                     
+                ></p>
+<p><em>1.循环解法</em></p>
+<ul>
+<li>题目已经告诉递推公式为： F(n) &#x3D; F(n - 1) + F(n - 2)</li>
+<li>现在只需要初始化数组的前两个元素，后面依次循环即可<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"><span class="type">int</span> dp[<span class="number">31</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">2</span>; i &lt;= n;i++)&#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div>
+<em>2.递归解法</em></li>
+<li>确定递归终点：当F(n)递归到0 or 1时，直接返回。因为F(0) &#x3D; 0, F(1) &#x3D; 1;<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">fib</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n &lt; <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">fib</span>(n - <span class="number">1</span>) + <span class="built_in">fib</span>(n - <span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+<h3 id="LeetCode70-爬楼梯"><a href="#LeetCode70-爬楼梯" class="headerlink" title="LeetCode70.爬楼梯"></a><a class="link"   href="https://leetcode.cn/problems/climbing-stairs/description/" >LeetCode70.爬楼梯 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/leetcode_dp_02.png"
+                     
+                ></p>
+<ul>
+<li>本题和斐波那契数列一样，当前阶f(n)可以从前一阶f(n - 1)和前两阶f(n - 2)达到。定义一个dp数组，记录达到当前阶的方法数量，那么dp[n] &#x3D; dp[n - 1] + dp[n - 2]<div class="highlight-container" data-rel="C++"><figure class="iseeu highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> dp[<span class="number">55</span>];</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">climbStairs</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//初始化dp，第一阶和第二阶分别是1和2，表示有一种方法到达第一阶和两种方法到达第二阶</span></span><br><span class="line">        dp[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        dp[<span class="number">2</span>] = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">3</span>; i &lt;= n; i++) &#123;</span><br><span class="line">            dp[i] = dp[i - <span class="number">1</span>] + dp[i - <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dp[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></div></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>leetcode</tag>
+        <tag>算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Spring Cloud-Ribbon篇(负载均衡)</title>
+    <url>/2024/03/12/Spring-Cloud-Ribbon%E7%AF%87-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
+    <content><![CDATA[<h2 id="负载均衡原理"><a href="#负载均衡原理" class="headerlink" title="负载均衡原理"></a>负载均衡原理</h2><p>SpringCloud底层其实是利用了一个名为Ribbon的组件，来实现负载均衡功能的。<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_01.png"
+                      alt="ribbon_01"
+                ></p>
+<p><strong>那么我们发出的请求明明是<a class="link"   href="http://userservice/user/1%EF%BC%8C%E6%80%8E%E4%B9%88%E5%8F%98%E6%88%90%E4%BA%86http://localhost:8081%E7%9A%84%E5%91%A2%EF%BC%9F" >http://userservice/user/1，怎么变成了http://localhost:8081的呢？ <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></strong></p>
+<h2 id="源码跟踪"><a href="#源码跟踪" class="headerlink" title="源码跟踪"></a>源码跟踪</h2><p>为什么我们只输入了service名称就可以访问了呢？之前还要获取ip和端口。</p>
+<p>显然有人帮我们根据service名称，获取到了服务实例的ip和端口。它就是<code>LoadBalancerInterceptor</code>，这个类会在对RestTemplate的请求进行拦截，然后从Eureka根据服务id获取服务列表，随后利用负载均衡算法得到真实的服务地址信息，替换服务id。</p>
+<p>我们进行源码跟踪：</p>
+<h3 id="LoadBalancerIntercepor"><a href="#LoadBalancerIntercepor" class="headerlink" title="LoadBalancerIntercepor"></a>LoadBalancerIntercepor</h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_02.png"
+                      alt="LoadBalancerIntercepor"
+                ><br>可以看到这里的intercept方法，拦截了用户的HttpRequest请求，然后做了几件事：</p>
+<ul>
+<li><code>request.getURI()</code>：获取请求uri，本例中就是 <a class="link"   href="http://user-service/user/8" >http://user-service/user/8 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
+<li><code>originalUri.getHost()</code>：获取uri路径的主机名，其实就是服务id，<code>user-service</code></li>
+<li><code>this.loadBalancer.execute()</code>：处理服务id，和用户请求。<br>这里的<code>this.loadBalancer</code>是<code>LoadBalancerClient</code>类型，我们继续跟入。</li>
+</ul>
+<h3 id="LoadBalancerClient"><a href="#LoadBalancerClient" class="headerlink" title="LoadBalancerClient"></a>LoadBalancerClient</h3><p>继续跟入execute方法：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_03.png"
+                      alt="LoadBalancerClient"
+                ><br>代码是这样的：</p>
+<ul>
+<li>getLoadBalancer(serviceId)：根据服务id获取ILoadBalancer，而ILoadBalancer会拿着服务id去eureka中获取服务列表并保存起来。</li>
+<li>getServer(loadBalancer)：利用内置的负载均衡算法，从服务列表中选择一个。本例中，可以看到获取了8082端口的服务<br>放行后，再次访问并跟踪，发现获取的是8081：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_04.png"
+                      alt="负载均衡"
+                ></li>
+</ul>
+<h3 id="负载均衡策略IRule"><a href="#负载均衡策略IRule" class="headerlink" title="负载均衡策略IRule"></a>负载均衡策略IRule</h3><p>在刚才的代码中，可以看到获取服务使通过一个<code>getServer</code>方法来做负载均衡:<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_04.png"
+                      alt="IRule"
+                ><br>我们继续跟入：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_05.png"
+                      alt="负载均衡"
+                ><br>继续跟踪源码chooseServer方法，发现这么一段代码：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_06.png"
+                      alt="chooseServer"
+                ><br>我们看看这个rule是谁：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_07.png"
+                      alt="DefaultRule"
+                ><br>这里的rule默认值是一个<code>RoundRobinRule</code>，也就是轮询</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_08.png"
+                      alt="DefaultRule"
+                ></p>
+<p>基本流程如下：</p>
+<ul>
+<li>拦截我们的RestTemplate请求<a class="link"   href="http://userservice/user/1" >http://userservice/user/1 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
+<li>RibbonLoadBalancerClient会从请求url中获取服务名称，也就是user-service</li>
+<li>DynamicServerListLoadBalancer根据user-service到eureka拉取服务列表</li>
+<li>eureka返回列表，localhost:8081、localhost:8082</li>
+<li>IRule利用内置负载均衡规则，从列表中选择一个，例如localhost:8081</li>
+<li>RibbonLoadBalancerClient修改请求地址，用localhost:8081替代userservice，得到<a class="link"   href="http://localhost:8081/user/1%EF%BC%8C%E5%8F%91%E8%B5%B7%E7%9C%9F%E5%AE%9E%E8%AF%B7%E6%B1%82" >http://localhost:8081/user/1，发起真实请求 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></li>
+</ul>
+<h2 id="负载均衡策略"><a href="#负载均衡策略" class="headerlink" title="负载均衡策略"></a>负载均衡策略</h2><p>负载均衡的规则都定义在IRule接口中，而IRule有很多不同的实现类：<br><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/assets/imgs/ribbon_08.png"
+                      alt="策略"
+                ><br>不同规则含义如下：</p>
+<table>
+<thead>
+<tr>
+<th><strong>内置负载均衡规则类</strong></th>
+<th><strong>规则描述</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RoundRobinRule</td>
+<td>简单轮询服务列表来选择服务器。它是Ribbon默认的负载均衡规则。</td>
+</tr>
+<tr>
+<td>AvailabilityFilteringRule</td>
+<td>对以下两种服务器进行忽略：   （1）在默认情况下，这台服务器如果3次连接失败，这台服务器就会被设置为“短路”状态。短路状态将持续30秒，如果再次连接失败，短路的持续时间就会几何级地增加。  （2）并发数过高的服务器。如果一个服务器的并发连接数过高，配置了AvailabilityFilteringRule规则的客户端也会将其忽略。并发连接数的上限，可以由客户端的<clientName>.<clientConfigNameSpace>.ActiveConnectionsLimit属性进行配置。</td>
+</tr>
+<tr>
+<td>WeightedResponseTimeRule</td>
+<td>为每一个服务器赋予一个权重值。服务器响应时间越长，这个服务器的权重就越小。这个规则会随机选择服务器，这个权重值会影响服务器的选择。</td>
+</tr>
+<tr>
+<td><strong>ZoneAvoidanceRule</strong></td>
+<td>以区域可用的服务器为基础进行服务器的选择。使用Zone对服务器进行分类，这个Zone可以理解为一个机房、一个机架等。而后再对Zone内的多个服务做轮询。</td>
+</tr>
+<tr>
+<td>BestAvailableRule</td>
+<td>忽略那些短路的服务器，并选择并发数较低的服务器。</td>
+</tr>
+<tr>
+<td>RandomRule</td>
+<td>随机选择一个可用的服务器。</td>
+</tr>
+<tr>
+<td>RetryRule</td>
+<td>重试机制的选择逻辑</td>
+</tr>
+</tbody></table>
+<h3 id="自定义负载均衡策略"><a href="#自定义负载均衡策略" class="headerlink" title="自定义负载均衡策略"></a>自定义负载均衡策略</h3><p>通过定义IRule实现可以修改负载均衡规则，有两种方式：</p>
+<ol>
+<li>代码方式：在order-service中的OrderApplication类中，定义一个新的IRule：<div class="highlight-container" data-rel="Java"><figure class="iseeu highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> IRule <span class="title function_">randomRule</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RandomRule</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div></li>
+<li>配置文件方式：在order-service的application.yml文件中，添加新的配置也可以修改规则：<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">userservice:</span> <span class="comment"># 给某个微服务配置负载均衡规则，这里是userservice服务</span></span><br><span class="line">  <span class="attr">ribbon:</span></span><br><span class="line">    <span class="attr">NFLoadBalancerRuleClassName:</span> <span class="string">com.netflix.loadbalancer.RandomRule</span> <span class="comment"># 负载均衡规则 </span></span><br></pre></td></tr></table></figure></div>
+<strong>注意</strong>，一般用默认的负载均衡规则，不做修改。</li>
+</ol>
+<h2 id="饥饿加载"><a href="#饥饿加载" class="headerlink" title="饥饿加载"></a>饥饿加载</h2><p>Ribbon默认是采用懒加载，即第一次访问时才会去创建LoadBalanceClient，请求时间会很长。</p>
+<p>而饥饿加载则会在项目启动时创建，降低第一次访问的耗时，通过下面配置开启饥饿加载：</p>
+<div class="highlight-container" data-rel="Yaml"><figure class="iseeu highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">ribbon:</span></span><br><span class="line">  <span class="attr">eager-load:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">clients:</span> <span class="string">userservice</span></span><br></pre></td></tr></table></figure></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+]]></content>
+      <categories>
+        <category>学习</category>
+      </categories>
+      <tags>
+        <tag>Spring Cloud</tag>
+        <tag>Ribbon</tag>
       </tags>
   </entry>
 </search>
