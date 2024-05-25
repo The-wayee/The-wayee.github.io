@@ -13,19 +13,22 @@
     
     <!--- Seo Part-->
     
-    <link rel="canonical" href="http://121.41.84.227/categories/"/>
+    <link rel="canonical" href="http://121.41.84.227/2024/05/16/java八股文/"/>
     <meta name="robots" content="index,follow">
     <meta name="googlebot" content="index,follow">
     <meta name="revisit-after" content="1 days">
     
-        <meta property="og:type" content="website">
-<meta property="og:title" content="categories">
-<meta property="og:url" content="http://121.41.84.227/categories/index.html">
+        <meta name="description" content="Redis篇缓存穿透查询一个不存在的数据，mysql查询不到数据也不会写入到redis中，导致每次请求都会访问数据库 解决方案一（缓存空数据）如果查询的数据是空，那么把这个空数据也存入redis优点：简单缺点：消耗内存，可能会发生不一致的问题 解决方案二（布隆过滤器）布隆过滤器底层使用bitmap(位图)作为数据结构，数据通过一系列的Hash扰动函数，计算出相应下标位置，将计算位从0置为1。 查询">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java八股文">
+<meta property="og:url" content="http://121.41.84.227/2024/05/16/Java%E5%85%AB%E8%82%A1%E6%96%87/index.html">
 <meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Redis篇缓存穿透查询一个不存在的数据，mysql查询不到数据也不会写入到redis中，导致每次请求都会访问数据库 解决方案一（缓存空数据）如果查询的数据是空，那么把这个空数据也存入redis优点：简单缺点：消耗内存，可能会发生不一致的问题 解决方案二（布隆过滤器）布隆过滤器底层使用bitmap(位图)作为数据结构，数据通过一系列的Hash扰动函数，计算出相应下标位置，将计算位从0置为1。 查询">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2024-02-10T18:05:29.000Z">
-<meta property="article:modified_time" content="2024-02-10T18:05:30.000Z">
+<meta property="article:published_time" content="2024-05-15T18:52:12.000Z">
+<meta property="article:modified_time" content="2024-05-15T19:40:29.080Z">
 <meta property="article:author" content="John Doe">
+<meta property="article:tag" content="八股">
 <meta name="twitter:card" content="summary">
     
     
@@ -38,7 +41,7 @@
     
     <title>
         
-            分类 -
+            Java八股文 -
         
         Redefine
     </title>
@@ -512,19 +515,208 @@
             <div class="main-content">
 
                 
-                    <div class="category-list-container">
-	<div >
-		<h1 class="category-header">
-			分类
-		</h1>
-	</div>
-	<div class="category-list-content">
-		<ul class="all-category-list"><li class="all-category-list-item"><a class="all-category-list-link" href="/categories/%E5%AD%A6%E4%B9%A0/">学习</a><span class="all-category-list-count">8</span></li></ul>
-	</div>
-	<div class="category-comments">
-		
-	</div>
+                    <div class="post-page-container flex relative justify-between box-border w-full h-full">
+    <div class="article-content-container">
+
+        <div class="article-title relative w-full">
+            
+                
+                
+                <img src="/assets/imgs/java.jpg" alt="Java八股文" class="w-full h-60 sm:h-72 md:h-80 object-cover sm:rounded-t-large dark:brightness-75"/>
+                
+                <div class="w-full flex items-center absolute bottom-0 justify-start">
+                    <h1 class="article-title-cover text-center mx-6 my-6 text-second-text-color bg-background-color-transparent px-4 py-3 text-3xl sm:text-4xl md:text-5xl font-bold backdrop-blur-lg rounded-xl border border-border-color ">Java八股文</h1>
+                </div>
+            
+            </div>
+
+        
+            <div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+                <div class="avatar w-[46px] h-[46px] flex-shrink-0 rounded-medium border border-border-color p-[1px]">
+                    <img src="/images/author_avar.jpg">
+                </div>
+                <div class="info flex flex-col justify-between">
+                    <div class="author flex items-center">
+                        <span class="name text-default-text-color text-lg font-semibold">犬来の八荒</span>
+                        
+                            <span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv2</span>
+                        
+                    </div>
+                    <div class="meta-info">
+                        <div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2024-05-16 02:52:12</span>
+        <span class="mobile">2024-05-16 02:52:12</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2024-05-16 03:40:29</span>
+            <span class="mobile">2024-05-16 03:40:29</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%85%AB%E8%82%A1/">八股</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+        <span class="article-wordcount article-meta-item">
+            <i class="fa-regular fa-typewriter"></i>&nbsp;<span>565 字</span>
+        </span>
+    
+    
+        <span class="article-min2read article-meta-item">
+            <i class="fa-regular fa-clock"></i>&nbsp;<span>1 分钟</span>
+        </span>
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
 </div>
+
+                    </div>
+                </div>
+            </div>
+        
+
+        
+
+
+        <div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+            <h1 id="Redis篇"><a href="#Redis篇" class="headerlink" title="Redis篇"></a>Redis篇</h1><h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>查询一个不存在的数据，mysql查询不到数据也不会写入到redis中，导致每次请求都会访问数据库</p>
+<h3 id="解决方案一（缓存空数据）"><a href="#解决方案一（缓存空数据）" class="headerlink" title="解决方案一（缓存空数据）"></a>解决方案一（缓存空数据）</h3><p>如果查询的数据是空，那么把这个空数据也存入redis<br>优点：简单<br>缺点：消耗内存，可能会发生不一致的问题</p>
+<h3 id="解决方案二（布隆过滤器）"><a href="#解决方案二（布隆过滤器）" class="headerlink" title="解决方案二（布隆过滤器）"></a>解决方案二（布隆过滤器）</h3><p>布隆过滤器底层使用bitmap(位图)作为数据结构，数据通过一系列的Hash扰动函数，计算出相应下标位置，将计算位从0置为1。</p>
+<p>查询数据的时候通过相同的Hash扰动函数获取hash值，判断相应位置是否都为1.</p>
+<p>布隆过滤器存在一定的误判率，我们可以设置这个误判率。误判率越低，所需要的空间也就相应越大。</p>
+<p>使用布隆过滤器时注意<code>缓存预热</code>，即将热点数据提前放置在布隆过滤器中</p>
+<a class="button  center large" target="_blank" rel="noopener" href='https://krisives.github.io/bloom-calculator' title='计算布隆过滤器占用大小的在线网站'><i class='fa-solid fa-play-circle'></i> 计算布隆过滤器占用大小的在线网站</a>
+
+<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>当一个热点key过期的时候，正好有大量请求，这些大量请求会直接打到DB，那么这些高并发的请求可能会把DB给压垮</p>
+<h3 id="解决方案一（互斥锁）"><a href="#解决方案一（互斥锁）" class="headerlink" title="解决方案一（互斥锁）"></a>解决方案一（互斥锁）</h3><p>当缓存失效时，先利用redis的setnx设置一个互斥锁，当获取锁成功后再去加载DB数据，获取锁失败的重试redis的get方法。<br>优点：强一致性<br>缺点：性能低</p>
+<h3 id="解决方案二-（逻辑过期）"><a href="#解决方案二-（逻辑过期）" class="headerlink" title="解决方案二 （逻辑过期）"></a>解决方案二 （逻辑过期）</h3><p>给key设置一个expire逻辑过期字段，从redis中出去字段后判断是否过期，如果过期了则开通另一个线程去更新数据，当前线程直接返回旧数据。<br>优点：高可用，性能强<br>缺点：不能保证数据一致</p>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>大量key在同一时间失效导致大量请求并发打到数据库，或者redis服务器宕机</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ul>
+<li>给不同的key设置随机的TTL时间</li>
+<li>利用redis集群提高服务的可用性 哨兵模式，集群模式</li>
+<li>给缓存业务添加限流降级策略 nginx&#x2F;spring cloud gateway</li>
+<li>添加多级缓存</li>
+</ul>
+
+        </div>
+
+        
+
+        
+            <ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+                
+                    <li class="tag-item mx-0.5">
+                        <a href="/tags/%E5%85%AB%E8%82%A1/">#八股</a>&nbsp;
+                    </li>
+                
+            </ul>
+        
+
+        
+
+        
+            <div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+                
+                
+                    <div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+                        <a class="next"
+                        rel="next"
+                        href="/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/"
+                        >
+                            <span class="title flex justify-center items-center">
+                                <span class="post-nav-title-item">算法学习(leetcode)</span>
+                                <span class="post-nav-item">下一篇</span>
+                            </span>
+                            <span class="right arrow-icon flex justify-center items-center">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </span>
+                        </a>
+                    </div>
+                
+            </div>
+        
+
+
+        
+            <div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+                <div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.mjs';
+
+      function loadWaline() {
+        init({
+          el: '#waline',
+          serverURL: 'https://example.example.com',
+          lang: 'zh-CN',
+          dark: 'body[class~="dark-mode"]',
+          requiredMeta: ['nick', 'mail'],
+          emoji: [],
+          recaptchaV3Key: "wasd",
+          
+        });
+      }
+
+      if (typeof swup !== 'undefined') {
+        loadWaline();
+      } else {
+        window.addEventListener('DOMContentLoaded', loadWaline);
+      }
+    </script>
+
+
+
+        
+    
+</div>
+
+            </div>
+        
+    </div>
+
+    
+        <div class="toc-content-container">
+            <div class="post-toc-wrap">
+    <div class="post-toc">
+        <div class="toc-title">此页目录</div>
+        <div class="page-title">Java八股文</div>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis%E7%AF%87"><span class="nav-number">1.</span> <span class="nav-text">Redis篇</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F"><span class="nav-number">1.1.</span> <span class="nav-text">缓存穿透</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%88%E7%BC%93%E5%AD%98%E7%A9%BA%E6%95%B0%E6%8D%AE%EF%BC%89"><span class="nav-number">1.1.1.</span> <span class="nav-text">解决方案一（缓存空数据）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%BA%8C%EF%BC%88%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%EF%BC%89"><span class="nav-number">1.1.2.</span> <span class="nav-text">解决方案二（布隆过滤器）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF"><span class="nav-number">1.2.</span> <span class="nav-text">缓存击穿</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%88%E4%BA%92%E6%96%A5%E9%94%81%EF%BC%89"><span class="nav-number">1.2.1.</span> <span class="nav-text">解决方案一（互斥锁）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%BA%8C-%EF%BC%88%E9%80%BB%E8%BE%91%E8%BF%87%E6%9C%9F%EF%BC%89"><span class="nav-number">1.2.2.</span> <span class="nav-text">解决方案二 （逻辑过期）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9"><span class="nav-number">1.3.</span> <span class="nav-text">缓存雪崩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.3.1.</span> <span class="nav-text">解决方案</span></a></li></ol></li></ol></li></ol>
+
+    </div>
+</div>
+        </div>
+    
+</div>
+
 
 
                 
@@ -611,6 +803,27 @@
         </div>
     </div>
 
+    
+        <div class="post-tools">
+            <div class="post-tools-container">
+    <ul class="article-tools-list">
+        <!-- TOC aside toggle -->
+        
+            <li class="right-bottom-tools page-aside-toggle">
+                <i class="fa-regular fa-outdent"></i>
+            </li>
+        
+
+        <!-- go comment -->
+        
+            <li class="go-comment">
+                <i class="fa-regular fa-comments"></i>
+            </li>
+        
+    </ul>
+</div>
+
+        </div>
     
 
     <div class="right-side-tools-container">
