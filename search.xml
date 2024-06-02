@@ -237,7 +237,7 @@
   <entry>
     <title>短链通平台(项目)</title>
     <url>/2024/03/28/Saas%E7%9F%AD%E9%93%BE%E6%8E%A5/</url>
-    <content><![CDATA[<h2 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h2><a class="button  center large" href='<http://47.101.133.243/' title='短链通在线地址'><i class='fa-solid> fa-play-circle'></i> 短链通在线地址</a>
+    <content><![CDATA[<h2 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h2><a class="button  center large" href='http://47.101.133.243/' title='短链通在线地址'><i class='fa-solid fa-play-circle'></i> 短链通在线地址</a>
 
 <ul>
 <li>短链通平台，用户将一个原始链接输入，平台通过特定算法返回一个特定的短链接，这个短链接唯一指定原始链接。原始链接可能非常长，而返回的短链接可能只有几个字符，在分享的时候可以更加方便。同时其他人访问这个短链接的时候，平台会记录访客信息，实现监控短链接数据。</li>
