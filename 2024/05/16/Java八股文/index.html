@@ -26,7 +26,7 @@
 <meta property="og:description" content="Redis篇缓存穿透查询一个不存在的数据，mysql查询不到数据也不会写入到redis中，导致每次请求都会访问数据库 解决方案一（缓存空数据）如果查询的数据是空，那么把这个空数据也存入redis优点：简单缺点：消耗内存，可能会发生不一致的问题 解决方案二（布隆过滤器）布隆过滤器底层使用bitmap(位图)作为数据结构，数据通过一系列的Hash扰动函数，计算出相应下标位置，将计算位从0置为1。 查询">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-05-15T18:52:12.000Z">
-<meta property="article:modified_time" content="2024-05-15T19:40:29.080Z">
+<meta property="article:modified_time" content="2024-06-03T09:38:08.222Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="八股">
 <meta name="twitter:card" content="summary">
@@ -43,7 +43,7 @@
         
             Java八股文 -
         
-        Redefine
+        犬来の八荒
     </title>
 
     
@@ -126,7 +126,7 @@
 <script src="/js/libs/anime.min.js"></script>
 
     <h1 class="ml13">
-        Redefine
+        犬来の八荒
     </h1>
     <script>
         var textWrapper = document.querySelector('.ml13');
@@ -282,7 +282,7 @@
             
             <a class="logo-title" href="/">
                 
-                Redefine
+                犬来の八荒
                 
             </a>
         </div>
@@ -495,7 +495,7 @@
         <div class="label text-third-text-color text-sm">分类</div>
     </a>
     <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
-        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">11</div>
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">12</div>
         <div class="label text-third-text-color text-sm">文章</div>
     </a>
 </div>
@@ -553,8 +553,8 @@
     
         <span class="article-date article-meta-item">
             <i class="fa-regular fa-wrench"></i>&nbsp;
-            <span class="desktop">2024-05-16 03:40:29</span>
-            <span class="mobile">2024-05-16 03:40:29</span>
+            <span class="desktop">2024-06-03 17:38:08</span>
+            <span class="mobile">2024-06-03 17:38:08</span>
             <span class="hover-info">更新</span>
         </span>
     
@@ -576,12 +576,12 @@
     
     
         <span class="article-wordcount article-meta-item">
-            <i class="fa-regular fa-typewriter"></i>&nbsp;<span>565 字</span>
+            <i class="fa-regular fa-typewriter"></i>&nbsp;<span>1.1k 字</span>
         </span>
     
     
         <span class="article-min2read article-meta-item">
-            <i class="fa-regular fa-clock"></i>&nbsp;<span>1 分钟</span>
+            <i class="fa-regular fa-clock"></i>&nbsp;<span>3 分钟</span>
         </span>
     
     
@@ -618,6 +618,23 @@
 <li>给缓存业务添加限流降级策略 nginx&#x2F;spring cloud gateway</li>
 <li>添加多级缓存</li>
 </ul>
+<h2 id="双写一致"><a href="#双写一致" class="headerlink" title="双写一致"></a>双写一致</h2><ol>
+<li><p>采用延迟双删方案，先删除缓存，再更新数据库，过一段时间再删除缓存</p>
+</li>
+<li><p>采用读写锁方案，redisson有提供读写锁。在读操作允许多个线程同时访问，写操作只运行一个线程访问。</p>
+</li>
+<li><p>采用MQ中间件，可以异步进行操作</p>
+</li>
+</ol>
+<h2 id="持久化"><a href="#持久化" class="headerlink" title="持久化"></a>持久化</h2><h3 id="RDB（Redis-Database-Backup-file）"><a href="#RDB（Redis-Database-Backup-file）" class="headerlink" title="RDB（Redis Database Backup file）"></a>RDB（Redis Database Backup file）</h3><p>redis数据备份文件，也叫redis数据快照。通过将redis内存的数据存储到磁盘中，当redis宕机时，可以通过RDB的快照文件恢复数据。</p>
+<h3 id="AOP（Append-Only-File）"><a href="#AOP（Append-Only-File）" class="headerlink" title="AOP（Append Only File）"></a>AOP（Append Only File）</h3><p>追加文件策略。把redis执行的写操作命令存储到磁盘中，当redis宕机时可以通过这个文件重新执行一遍命令。</p>
+<h2 id="数据过期策略"><a href="#数据过期策略" class="headerlink" title="数据过期策略"></a>数据过期策略</h2><h3 id="惰性删除"><a href="#惰性删除" class="headerlink" title="惰性删除"></a>惰性删除</h3><p>当访问key时，判断它是否过期。如果过期了就删除，反之返回key</p>
+<h3 id="定期删除"><a href="#定期删除" class="headerlink" title="定期删除"></a>定期删除</h3><ul>
+<li>SLOW模式是定时任务，执行频率默认为10hz，每次不超过25ms，以通过修改配置文件redis.conf 的 <strong>hz</strong> 选项来调整这个次数</li>
+<li>FAST模式执行频率不固定，每次事件循环会尝试执行，但两次间隔不低于2ms，每次耗时不超过1ms</li>
+</ul>
+<p>Redis的过期删除策略：<strong>惰性删除 + 定期删除</strong>两种策略进行配合使用。</p>
+<h2 id="数据淘汰策略"><a href="#数据淘汰策略" class="headerlink" title="数据淘汰策略"></a>数据淘汰策略</h2><p>noeviction： 不淘汰任何key，但是内存满时不允许写入新数据，默认就是这种策略。<br>volatile-ttl： 对设置了TTL的key，比较key的剩余TTL值，TTL越小越先被淘汰<br>allkeys-random：对全体key ，随机进行淘汰。<br>volatile-random：对设置了TTL的key ，随机进行淘汰。<br>allkeys-lru： 对全体key，基于LRU算法进行淘汰 （LRU：Least Recently Used）<br>volatile-lru： 对设置了TTL的key，基于LRU算法进行淘汰<br>allkeys-lfu： 对全体key，基于LFU算法进行淘汰  （LFU：Least Frequently Used）<br>volatile-lfu： 对设置了TTL的key，基于LFU算法进行淘汰</p>
 
         </div>
 
@@ -637,6 +654,21 @@
 
         
             <div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+                
+                    <div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+                        <a class="prev"
+                        rel="prev"
+                        href="/2024/07/10/JWT%E7%99%BB%E5%BD%95/"
+                        >
+                            <span class="left arrow-icon flex justify-center items-center">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </span>
+                            <span class="title flex justify-center items-center">
+                                <span class="post-nav-title-item">JWT登录</span>
+                                <span class="post-nav-item">上一篇</span>
+                            </span>
+                        </a>
+                    </div>
                 
                 
                     <div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
@@ -709,7 +741,7 @@
     <div class="post-toc">
         <div class="toc-title">此页目录</div>
         <div class="page-title">Java八股文</div>
-        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis%E7%AF%87"><span class="nav-number">1.</span> <span class="nav-text">Redis篇</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F"><span class="nav-number">1.1.</span> <span class="nav-text">缓存穿透</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%88%E7%BC%93%E5%AD%98%E7%A9%BA%E6%95%B0%E6%8D%AE%EF%BC%89"><span class="nav-number">1.1.1.</span> <span class="nav-text">解决方案一（缓存空数据）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%BA%8C%EF%BC%88%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%EF%BC%89"><span class="nav-number">1.1.2.</span> <span class="nav-text">解决方案二（布隆过滤器）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF"><span class="nav-number">1.2.</span> <span class="nav-text">缓存击穿</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%88%E4%BA%92%E6%96%A5%E9%94%81%EF%BC%89"><span class="nav-number">1.2.1.</span> <span class="nav-text">解决方案一（互斥锁）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%BA%8C-%EF%BC%88%E9%80%BB%E8%BE%91%E8%BF%87%E6%9C%9F%EF%BC%89"><span class="nav-number">1.2.2.</span> <span class="nav-text">解决方案二 （逻辑过期）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9"><span class="nav-number">1.3.</span> <span class="nav-text">缓存雪崩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.3.1.</span> <span class="nav-text">解决方案</span></a></li></ol></li></ol></li></ol>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis%E7%AF%87"><span class="nav-number">1.</span> <span class="nav-text">Redis篇</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F"><span class="nav-number">1.1.</span> <span class="nav-text">缓存穿透</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%88%E7%BC%93%E5%AD%98%E7%A9%BA%E6%95%B0%E6%8D%AE%EF%BC%89"><span class="nav-number">1.1.1.</span> <span class="nav-text">解决方案一（缓存空数据）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%BA%8C%EF%BC%88%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%EF%BC%89"><span class="nav-number">1.1.2.</span> <span class="nav-text">解决方案二（布隆过滤器）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF"><span class="nav-number">1.2.</span> <span class="nav-text">缓存击穿</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%88%E4%BA%92%E6%96%A5%E9%94%81%EF%BC%89"><span class="nav-number">1.2.1.</span> <span class="nav-text">解决方案一（互斥锁）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%BA%8C-%EF%BC%88%E9%80%BB%E8%BE%91%E8%BF%87%E6%9C%9F%EF%BC%89"><span class="nav-number">1.2.2.</span> <span class="nav-text">解决方案二 （逻辑过期）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9"><span class="nav-number">1.3.</span> <span class="nav-text">缓存雪崩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.3.1.</span> <span class="nav-text">解决方案</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8C%E5%86%99%E4%B8%80%E8%87%B4"><span class="nav-number">1.4.</span> <span class="nav-text">双写一致</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%81%E4%B9%85%E5%8C%96"><span class="nav-number">1.5.</span> <span class="nav-text">持久化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RDB%EF%BC%88Redis-Database-Backup-file%EF%BC%89"><span class="nav-number">1.5.1.</span> <span class="nav-text">RDB（Redis Database Backup file）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AOP%EF%BC%88Append-Only-File%EF%BC%89"><span class="nav-number">1.5.2.</span> <span class="nav-text">AOP（Append Only File）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%BF%87%E6%9C%9F%E7%AD%96%E7%95%A5"><span class="nav-number">1.6.</span> <span class="nav-text">数据过期策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%83%B0%E6%80%A7%E5%88%A0%E9%99%A4"><span class="nav-number">1.6.1.</span> <span class="nav-text">惰性删除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E6%9C%9F%E5%88%A0%E9%99%A4"><span class="nav-number">1.6.2.</span> <span class="nav-text">定期删除</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5"><span class="nav-number">1.7.</span> <span class="nav-text">数据淘汰策略</span></a></li></ol></li></ol>
 
     </div>
 </div>
@@ -742,11 +774,11 @@
                 
                 <p class="post-count space-x-0.5">
                     <span>
-                        共 11 篇文章
+                        共 12 篇文章
                     </span>
                     
                         <span>
-                            共 24.4k 字
+                            共 26.2k 字
                         </span>
                     
                 </p>
