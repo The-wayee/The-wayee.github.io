@@ -13,7 +13,7 @@
     
     <!--- Seo Part-->
     
-    <link rel="canonical" href="https://github.com/the-wayee/the-wayee.github.io/2024/07/10/jwt登录/"/>
+    <link rel="canonical" href="https://the-wayee/the-wayee.github.io/2024/07/10/jwt登录/"/>
     <meta name="robots" content="index,follow">
     <meta name="googlebot" content="index,follow">
     <meta name="revisit-after" content="1 days">
@@ -21,7 +21,7 @@
         <meta name="description" content="什么是JWT？JWT，全称是Json Web Token， 是JSON风格轻量级的授权和身份认证规范，可实现无状态、分布式的Web应用授权；官网：https:&#x2F;&#x2F;jwt.io  后端利用JWT生成一个加密token，里面存有用户信息，在登录或者注册请求完成后将token返回给前端， 以后前端发送请求将在请求头中携带token，后端将从请求头中拿到token并解析判断是否有效 依赖配置（jjwt）1">
 <meta property="og:type" content="article">
 <meta property="og:title" content="JWT登录">
-<meta property="og:url" content="https://github.com/the-wayee/the-wayee.github.io/2024/07/10/JWT%E7%99%BB%E5%BD%95/index.html">
+<meta property="og:url" content="https://the-wayee/the-wayee.github.io/2024/07/10/JWT%E7%99%BB%E5%BD%95/index.html">
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="什么是JWT？JWT，全称是Json Web Token， 是JSON风格轻量级的授权和身份认证规范，可实现无状态、分布式的Web应用授权；官网：https:&#x2F;&#x2F;jwt.io  后端利用JWT生成一个加密token，里面存有用户信息，在登录或者注册请求完成后将token返回给前端， 以后前端发送请求将在请求头中携带token，后端将从请求头中拿到token并解析判断是否有效 依赖配置（jjwt）1">
 <meta property="og:locale" content="zh_CN">
@@ -33,10 +33,10 @@
     
     
     <!--- Icon Part-->
-    <link rel="icon" type="image/png" href="/the-wayee/the-wayee.github.io/images/redefine-favicon.svg" sizes="192x192">
-    <link rel="apple-touch-icon" sizes="180x180" href="/the-wayee/the-wayee.github.io/images/redefine-favicon.svg">
+    <link rel="icon" type="image/png" href="/the-wayee.github.io/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/the-wayee.github.io/images/redefine-favicon.svg">
     <meta name="theme-color" content="#A31F34">
-    <link rel="shortcut icon" href="/the-wayee/the-wayee.github.io/images/redefine-favicon.svg">
+    <link rel="shortcut icon" href="/the-wayee.github.io/images/redefine-favicon.svg">
     <!--- Page Info-->
     
     <title>
@@ -47,27 +47,27 @@
     </title>
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/fonts/Chillax/chillax.css">
+<link rel="stylesheet" href="/the-wayee.github.io/fonts/Chillax/chillax.css">
 
 
     <!--- Inject Part-->
     
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/css/style.css">
+<link rel="stylesheet" href="/the-wayee.github.io/css/style.css">
 
 
     
         
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/assets/build/styles.css">
+<link rel="stylesheet" href="/the-wayee.github.io/assets/build/styles.css">
 
     
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/fonts/GeistMono/geist-mono.css">
+<link rel="stylesheet" href="/the-wayee.github.io/fonts/GeistMono/geist-mono.css">
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/fonts/Geist/geist.css">
+<link rel="stylesheet" href="/the-wayee.github.io/fonts/Geist/geist.css">
 
     <!--- Font Part-->
     
@@ -77,12 +77,12 @@
 
     
         
-<script src="/the-wayee/the-wayee.github.io/js/libs/anime.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/anime.min.js"></script>
 
     
 
     <script id="hexo-configurations">
-    window.config = {"hostname":"github.com","root":"/the-wayee/the-wayee.github.io/","language":"zh-CN","path":"search.xml"};
+    window.config = {"hostname":"the-wayee","root":"/the-wayee.github.io/","language":"zh-CN","path":"search.xml"};
     window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"title_alignment":"left","headings_top_spacing":{"h1":"5rem","h2":"4rem","h3":"2.8rem","h4":"2.5rem","h5":"2.2rem","h6":"2rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":true,"expand":true,"init_open":true},"copyright":{"enable":false,"default":"cc_by_nc_sa"},"lazyload":true,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]},"code_b lock":{"copy":true,"style":"mac","font":{"enable":false,"family":null,"url":null}}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":true,"open_graph":true,"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"Theme Redefine","subtitle":{"text":["This is the first message","This is the second message","etc"],"hitokoto":{"enable":"enable","api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":{"github":"https://github.com/the-wayee","instagram":null,"zhihu":null,"twitter":null,"email":null,"tiktok":"https://v.douyin.com/iN62Mm2s/ 5@8.com :5pm","bilibili":"https://space.bilibili.com/344185148?spm_id_from=333.337.0.0"},"qrs":{"weixin":"/images/wx_ava.png","qq":"/images/qq_ava.jpg"}}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"enable":false,"version":"9.3.0"}},"version":"2.6.4","navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives","icon":"fa-regular fa-archive"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about-me","Friends":"/links"}}},"search":{"enable":true,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur"},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":null,"show_on_mobile":true,"links":{"Archives":{"path":"/archives","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","categories":{"enable":true,"limit":2},"tags":{"enable":true,"limit":3}},"footerStart":"2022/8/17 11:45:14"};
     window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
     window.data = {"masonry":false};
@@ -90,16 +90,16 @@
     
     <!--- Fontawesome Part-->
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/fontawesome/fontawesome.min.css">
+<link rel="stylesheet" href="/the-wayee.github.io/fontawesome/fontawesome.min.css">
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/fontawesome/brands.min.css">
+<link rel="stylesheet" href="/the-wayee.github.io/fontawesome/brands.min.css">
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/fontawesome/solid.min.css">
+<link rel="stylesheet" href="/the-wayee.github.io/fontawesome/solid.min.css">
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/fontawesome/regular.min.css">
+<link rel="stylesheet" href="/the-wayee.github.io/fontawesome/regular.min.css">
 
     
     
@@ -280,7 +280,7 @@
     <div class="navbar-content ">
         <div class="left">
             
-            <a class="logo-title" href="/the-wayee/the-wayee.github.io/">
+            <a class="logo-title" href="/the-wayee.github.io/">
                 
                 犬来の八荒
                 
@@ -298,7 +298,7 @@
                             <li class="navbar-item">
                                 <!-- Menu -->
                                 <a class=""
-                                   href="/the-wayee/the-wayee.github.io/"
+                                   href="/the-wayee.github.io/"
                                         >
                                     <i class="fa-regular fa-house fa-fw"></i>
                                     首页
@@ -315,7 +315,7 @@
                             <li class="navbar-item">
                                 <!-- Menu -->
                                 <a class=""
-                                   href="/the-wayee/the-wayee.github.io/archives"
+                                   href="/the-wayee.github.io/archives"
                                         >
                                     <i class="fa-regular fa-archive fa-fw"></i>
                                     归档
@@ -344,13 +344,13 @@
                                     <ul class="sub-menu">
                                         
                                             <li>
-                                                <a href="/the-wayee/the-wayee.github.io/about-me">
+                                                <a href="/the-wayee.github.io/about-me">
                                                     ME
                                                 </a>
                                             </li>
                                         
                                             <li>
-                                                <a href="/the-wayee/the-wayee.github.io/links">
+                                                <a href="/the-wayee.github.io/links">
                                                     友情链接
                                                 </a>
                                             </li>
@@ -389,7 +389,7 @@
                     <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
                         
                         <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
-                           href="/the-wayee/the-wayee.github.io/"
+                           href="/the-wayee.github.io/"
                         >
                             <span>
                                 首页
@@ -409,7 +409,7 @@
                     <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
                         
                         <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
-                           href="/the-wayee/the-wayee.github.io/archives"
+                           href="/the-wayee.github.io/archives"
                         >
                             <span>
                                 归档
@@ -445,12 +445,12 @@
                                 
                                     <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
                                         <a class=" text-third-text-color text-xl"
-                                           href="/the-wayee/the-wayee.github.io/about-me">ME</a>
+                                           href="/the-wayee.github.io/about-me">ME</a>
                                     </div>
                                 
                                     <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
                                         <a class=" text-third-text-color text-xl"
-                                           href="/the-wayee/the-wayee.github.io/links">友情链接</a>
+                                           href="/the-wayee.github.io/links">友情链接</a>
                                     </div>
                                 
                             </div>
@@ -465,7 +465,7 @@
                     
                     <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
                         <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full active"
-                           href="/the-wayee/the-wayee.github.io/tags"
+                           href="/the-wayee.github.io/tags"
                         >
                             <span>Tags</span>
                             <i class="fa-regular fa-tags fa-sm fa-fw"></i>
@@ -475,7 +475,7 @@
                     
                     <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
                         <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full active"
-                           href="/the-wayee/the-wayee.github.io/categories"
+                           href="/the-wayee.github.io/categories"
                         >
                             <span>Categories</span>
                             <i class="fa-regular fa-folder fa-sm fa-fw"></i>
@@ -486,15 +486,15 @@
         </ul>
 
         <div class="statistics flex justify-around my-2.5">
-    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/the-wayee/the-wayee.github.io/tags">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/the-wayee.github.io/tags">
         <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">15</div>
         <div class="label text-third-text-color text-sm">标签</div>
     </a>
-    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/the-wayee/the-wayee.github.io/categories">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/the-wayee.github.io/categories">
         <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">1</div>
         <div class="label text-third-text-color text-sm">分类</div>
     </a>
-    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/the-wayee/the-wayee.github.io/archives">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/the-wayee.github.io/archives">
         <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">13</div>
         <div class="label text-third-text-color text-sm">文章</div>
     </a>
@@ -522,7 +522,7 @@
             
                 
                 
-                <img src="/the-wayee/the-wayee.github.io/assets/imgs/jwt.jpg" alt="JWT登录" class="w-full h-60 sm:h-72 md:h-80 object-cover sm:rounded-t-large dark:brightness-75"/>
+                <img src="/the-wayee.github.io/assets/imgs/jwt.jpg" alt="JWT登录" class="w-full h-60 sm:h-72 md:h-80 object-cover sm:rounded-t-large dark:brightness-75"/>
                 
                 <div class="w-full flex items-center absolute bottom-0 justify-start">
                     <h1 class="article-title-cover text-center mx-6 my-6 text-second-text-color bg-background-color-transparent px-4 py-3 text-3xl sm:text-4xl md:text-5xl font-semibold backdrop-blur-lg rounded-xl border border-border-color ">JWT登录</h1>
@@ -533,7 +533,7 @@
         
             <div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
                 <div class="avatar w-[46px] h-[46px] flex-shrink-0 rounded-medium border border-border-color p-[1px]">
-                    <img src="/the-wayee/the-wayee.github.io/images/author_avar.jpg">
+                    <img src="/the-wayee.github.io/images/author_avar.jpg">
                 </div>
                 <div class="info flex flex-col justify-between">
                     <div class="author flex items-center">
@@ -566,7 +566,7 @@
             <ul>
                 
                     <li>
-                        <a href="/the-wayee/the-wayee.github.io/tags/spring-boot/">spring boot</a>&nbsp;
+                        <a href="/the-wayee.github.io/tags/spring-boot/">spring boot</a>&nbsp;
                     </li>
                 
             </ul>
@@ -630,7 +630,7 @@
             <ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
                 
                     <li class="tag-item mx-0.5">
-                        <a href="/the-wayee/the-wayee.github.io/tags/spring-boot/">#spring boot</a>&nbsp;
+                        <a href="/the-wayee.github.io/tags/spring-boot/">#spring boot</a>&nbsp;
                     </li>
                 
             </ul>
@@ -644,7 +644,7 @@
                     <div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
                         <a class="prev"
                         rel="prev"
-                        href="/the-wayee/the-wayee.github.io/2024/08/06/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"
+                        href="/the-wayee.github.io/2024/08/06/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"
                         >
                             <span class="left arrow-icon flex justify-center items-center">
                                 <i class="fa-solid fa-chevron-left"></i>
@@ -660,7 +660,7 @@
                     <div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
                         <a class="next"
                         rel="next"
-                        href="/the-wayee/the-wayee.github.io/2024/05/16/Java%E5%85%AB%E8%82%A1%E6%96%87/"
+                        href="/the-wayee.github.io/2024/05/16/Java%E5%85%AB%E8%82%A1%E6%96%87/"
                         >
                             <span class="title flex justify-center items-center">
                                 <span class="post-nav-title-item">Java八股文</span>
@@ -689,7 +689,7 @@
             
     <div id="waline"></div>
     <script type="module" data-swup-reload-script>
-      import { init } from '/the-wayee/the-wayee.github.io/js/libs/waline.mjs';
+      import { init } from '/the-wayee.github.io/js/libs/waline.mjs';
 
       function loadWaline() {
         init({
@@ -756,7 +756,7 @@
               <span>2022</span>
               -
             
-            2024&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/the-wayee/the-wayee.github.io/">犬来の八荒</a>
+            2024&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/the-wayee.github.io/">犬来の八荒</a>
             
                 
                 <p class="post-count space-x-0.5">
@@ -926,17 +926,17 @@
 
 
     
-<script src="/the-wayee/the-wayee.github.io/js/libs/Swup.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/Swup.min.js"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/libs/SwupSlideTheme.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/SwupSlideTheme.min.js"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/libs/SwupScriptsPlugin.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/SwupScriptsPlugin.min.js"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/libs/SwupProgressPlugin.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/SwupProgressPlugin.min.js"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/libs/SwupScrollPlugin.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/SwupScrollPlugin.min.js"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/libs/SwupPreloadPlugin.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/SwupPreloadPlugin.min.js"></script>
 
 <script>
     const swup = new Swup({
@@ -963,57 +963,57 @@
 
 
 
-<script src="/the-wayee/the-wayee.github.io/js/tools/imageViewer.js" type="module"></script>
+<script src="/the-wayee.github.io/js/tools/imageViewer.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/utils.js" type="module"></script>
+<script src="/the-wayee.github.io/js/utils.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/main.js" type="module"></script>
+<script src="/the-wayee.github.io/js/main.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/layouts/navbarShrink.js" type="module"></script>
+<script src="/the-wayee.github.io/js/layouts/navbarShrink.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/tools/scrollTopBottom.js" type="module"></script>
+<script src="/the-wayee.github.io/js/tools/scrollTopBottom.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/tools/lightDarkSwitch.js" type="module"></script>
+<script src="/the-wayee.github.io/js/tools/lightDarkSwitch.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/layouts/categoryList.js" type="module"></script>
-
-
-
-    
-<script src="/the-wayee/the-wayee.github.io/js/tools/localSearch.js" type="module"></script>
-
+<script src="/the-wayee.github.io/js/layouts/categoryList.js" type="module"></script>
 
 
 
     
-<script src="/the-wayee/the-wayee.github.io/js/tools/codeBlock.js" type="module"></script>
+<script src="/the-wayee.github.io/js/tools/localSearch.js" type="module"></script>
 
 
 
 
     
-<script src="/the-wayee/the-wayee.github.io/js/layouts/lazyload.js" type="module"></script>
+<script src="/the-wayee.github.io/js/tools/codeBlock.js" type="module"></script>
 
 
 
 
     
-<script src="/the-wayee/the-wayee.github.io/js/tools/runtime.js"></script>
+<script src="/the-wayee.github.io/js/layouts/lazyload.js" type="module"></script>
+
+
+
 
     
-<script src="/the-wayee/the-wayee.github.io/js/libs/odometer.min.js"></script>
+<script src="/the-wayee.github.io/js/tools/runtime.js"></script>
 
     
-<link rel="stylesheet" href="/the-wayee/the-wayee.github.io/assets/odometer-theme-minimal.css">
+<script src="/the-wayee.github.io/js/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/the-wayee.github.io/assets/odometer-theme-minimal.css">
 
 
 
 
   
-<script src="/the-wayee/the-wayee.github.io/js/libs/Typed.min.js"></script>
+<script src="/the-wayee.github.io/js/libs/Typed.min.js"></script>
 
   
-<script src="/the-wayee/the-wayee.github.io/js/plugins/typed.js" type="module"></script>
+<script src="/the-wayee.github.io/js/plugins/typed.js" type="module"></script>
 
 
 
@@ -1026,11 +1026,11 @@
 <div class="post-scripts" data-swup-reload-script>
     
         
-<script src="/the-wayee/the-wayee.github.io/js/tools/tocToggle.js" type="module"></script>
+<script src="/the-wayee.github.io/js/tools/tocToggle.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/layouts/toc.js" type="module"></script>
+<script src="/the-wayee.github.io/js/layouts/toc.js" type="module"></script>
 
-<script src="/the-wayee/the-wayee.github.io/js/plugins/tabs.js" type="module"></script>
+<script src="/the-wayee.github.io/js/plugins/tabs.js" type="module"></script>
 
     
 </div>
