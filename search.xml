@@ -2,7 +2,7 @@
 <search>
   <entry>
     <title>Docker Quickstart</title>
-    <url>/2024/03/01/Docker-Quickstart/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/03/01/Docker-Quickstart/</url>
     <content><![CDATA[<h2 id="卸载旧版"><a href="#卸载旧版" class="headerlink" title="卸载旧版"></a>卸载旧版</h2><p>首先如果系统中已经存在旧的Docker，则先卸载：</p>
 <div class="highlight-container" data-rel="Bash"><figure class="iseeu highlight bash"><table><tr><td class="code"><pre><span class="line">yum remove docker \</span><br><span class="line">    docker-client \</span><br><span class="line">    docker-client-latest \</span><br><span class="line">    docker-common \</span><br><span class="line">    docker-latest \</span><br><span class="line">    docker-latest-logrotate \</span><br><span class="line">    docker-logrotate \</span><br><span class="line">    docker-engine</span><br></pre></td></tr></table></figure></div>
 
@@ -84,7 +84,7 @@
   </entry>
   <entry>
     <title>Redis缓存</title>
-    <url>/2024/02/11/Redis%E7%BC%93%E5%AD%98/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/02/11/Redis%E7%BC%93%E5%AD%98/</url>
     <content><![CDATA[<h2 id="缓存（cache）"><a href="#缓存（cache）" class="headerlink" title="缓存（cache）"></a>缓存（cache）</h2><p>缓存(Cache), 就是数据交换的缓冲区,俗称的缓存就是缓冲区内的数据,一般从数据库中获取,存储于<em>本地代码</em>。</p>
 <h2 id="为什么要使用缓存"><a href="#为什么要使用缓存" class="headerlink" title="为什么要使用缓存"></a>为什么要使用缓存</h2><ul>
 <li>缓存数据存储于代码中,而代码运行在内存中,内存的读写性能远高于磁盘,缓存可以大大降低用户访问并发量带来的服务器读写压力；</li>
@@ -175,7 +175,7 @@
   </entry>
   <entry>
     <title>Spring Cloud-Eureka篇(注册中心)</title>
-    <url>/2024/03/12/Spring-Cloud-Eureka%E7%AF%87/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/03/12/Spring-Cloud-Eureka%E7%AF%87/</url>
     <content><![CDATA[<h2 id="Eureka-的作用"><a href="#Eureka-的作用" class="headerlink" title="Eureka 的作用"></a>Eureka 的作用</h2><ul>
 <li><p>Eureka 又称服务注册中心，全部服务都需要进行注册才能使用，也是微服务中必不可少的一个组件<br><img  
                      lazyload
@@ -236,7 +236,7 @@
   </entry>
   <entry>
     <title>短链通平台(项目)</title>
-    <url>/2024/03/28/Saas%E7%9F%AD%E9%93%BE%E6%8E%A5/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/03/28/Saas%E7%9F%AD%E9%93%BE%E6%8E%A5/</url>
     <content><![CDATA[<h2 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h2><a class="button  center large" href='http://47.101.133.243/' title='短链通在线地址'><i class='fa-solid fa-play-circle'></i> 短链通在线地址</a>
 
 <ul>
@@ -450,7 +450,7 @@
   </entry>
   <entry>
     <title>Spring Cloud-Feign篇(远程调用)</title>
-    <url>/2024/03/13/Spring-Cloud-Feign%E7%AF%87-%E8%BF%9C%E7%A8%8B%E8%B0%83%E7%94%A8/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/03/13/Spring-Cloud-Feign%E7%AF%87-%E8%BF%9C%E7%A8%8B%E8%B0%83%E7%94%A8/</url>
     <content><![CDATA[<h2 id="认识Feign"><a href="#认识Feign" class="headerlink" title="认识Feign"></a>认识Feign</h2><p>Feign是一个声明式的http客户端，官方地址：<a class="link"   href="https://github.com/OpenFeign/feign" >https://github.com/OpenFeign/feign <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，其作用就是帮助我们优雅的实现http请求的发送</p>
 <h2 id="Feign替代RestTemplate"><a href="#Feign替代RestTemplate" class="headerlink" title="Feign替代RestTemplate"></a>Feign替代RestTemplate</h2><p>Fegin的使用步骤如下</p>
 <h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><p>我们在order-service服务的pom文件中引入feign的依赖：</p>
@@ -626,7 +626,7 @@
   </entry>
   <entry>
     <title>Spring Cloud-Gateway篇(服务网关)</title>
-    <url>/2024/03/13/Spring-Cloud-Gateway%E7%AF%87-%E6%9C%8D%E5%8A%A1%E7%BD%91%E5%85%B3/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/03/13/Spring-Cloud-Gateway%E7%AF%87-%E6%9C%8D%E5%8A%A1%E7%BD%91%E5%85%B3/</url>
     <content><![CDATA[<h2 id="Gateway简介"><a href="#Gateway简介" class="headerlink" title="Gateway简介"></a>Gateway简介</h2><p>Spring Cloud Gateway 是 Spring Cloud 的一个全新项目，该项目是基于 Spring 5.0，Spring Boot 2.0 和 Project Reactor 等响应式编程和事件流技术开发的网关，它旨在为微服务架构提供一种简单有效的统一的 API 路由管理方式。</p>
 <h2 id="为什么需要网关"><a href="#为什么需要网关" class="headerlink" title="为什么需要网关"></a>为什么需要网关</h2><p>Gateway网关是我们服务的守门神，所有微服务的统一入口。</p>
 <p>网关的<strong>核心功能特性</strong>：</p>
@@ -855,7 +855,7 @@
   </entry>
   <entry>
     <title>redis秒杀业务（分布式锁）</title>
-    <url>/2024/02/14/redis%E7%A7%92%E6%9D%80%E4%B8%9A%E5%8A%A1%EF%BC%88%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%EF%BC%89/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/02/14/redis%E7%A7%92%E6%9D%80%E4%B8%9A%E5%8A%A1%EF%BC%88%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%EF%BC%89/</url>
     <content><![CDATA[<h1 id="优惠券秒杀"><a href="#优惠券秒杀" class="headerlink" title="优惠券秒杀"></a>优惠券秒杀</h1><h2 id="一-生成全局唯一ID"><a href="#一-生成全局唯一ID" class="headerlink" title="一. 生成全局唯一ID"></a>一. 生成全局唯一ID</h2><h3 id="由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID"><a href="#由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID" class="headerlink" title="由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID"></a>由于唯一的商品就是优惠券，需要用户抢，我们需要给它设置一个唯一ID</h3><p> <img  
                      lazyload
                      src="/images/loading.svg"
@@ -1145,7 +1145,7 @@
   </entry>
   <entry>
     <title>Spring Cloud-Nacos篇(注册中心)</title>
-    <url>/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/03/13/Spring-Cloud-Nacos%E7%AF%87-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
     <content><![CDATA[<h2 id="认识-Nacos"><a href="#认识-Nacos" class="headerlink" title="认识 Nacos"></a>认识 Nacos</h2><p><a class="link"   href="https://nacos.io/" >Nacos <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>是阿里巴巴的产品，现在是<a class="link"   href="https://spring.io/projects/spring-cloud" >SpringCloud <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>中的一个组件。相比<a class="link"   href="https://github.com/Netflix/eureka" >Eureka <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>功能更加丰富，在国内受欢迎程度较高。<br><img  
                      lazyload
                      src="/images/loading.svg"
@@ -1373,7 +1373,7 @@
   </entry>
   <entry>
     <title>算法学习(leetcode)</title>
-    <url>/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/04/02/%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%EF%BC%88leetcode%EF%BC%89/</url>
     <content><![CDATA[<h1 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h1><h2 id="二分法"><a href="#二分法" class="headerlink" title="二分法"></a>二分法</h2><h3 id="LeetCode704-二分查找"><a href="#LeetCode704-二分查找" class="headerlink" title="LeetCode704.二分查找"></a><a class="link"   href="https://leetcode.cn/problems/binary-search/description/" >LeetCode704.二分查找 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></h3><p><img  
                      lazyload
                      src="/images/loading.svg"
@@ -1469,7 +1469,7 @@
   </entry>
   <entry>
     <title>Spring Cloud-Ribbon篇(负载均衡)</title>
-    <url>/2024/03/12/Spring-Cloud-Ribbon%E7%AF%87-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/03/12/Spring-Cloud-Ribbon%E7%AF%87-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
     <content><![CDATA[<h2 id="负载均衡原理"><a href="#负载均衡原理" class="headerlink" title="负载均衡原理"></a>负载均衡原理</h2><p>SpringCloud底层其实是利用了一个名为Ribbon的组件，来实现负载均衡功能的。<br><img  
                      lazyload
                      src="/images/loading.svg"
@@ -1622,7 +1622,7 @@
   </entry>
   <entry>
     <title>Java八股文</title>
-    <url>/2024/05/16/Java%E5%85%AB%E8%82%A1%E6%96%87/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/05/16/Java%E5%85%AB%E8%82%A1%E6%96%87/</url>
     <content><![CDATA[<h1 id="Redis篇"><a href="#Redis篇" class="headerlink" title="Redis篇"></a>Redis篇</h1><h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>查询一个不存在的数据，mysql查询不到数据也不会写入到redis中，导致每次请求都会访问数据库</p>
 <h3 id="解决方案一（缓存空数据）"><a href="#解决方案一（缓存空数据）" class="headerlink" title="解决方案一（缓存空数据）"></a>解决方案一（缓存空数据）</h3><p>如果查询的数据是空，那么把这个空数据也存入redis<br>优点：简单<br>缺点：消耗内存，可能会发生不一致的问题</p>
 <h3 id="解决方案二（布隆过滤器）"><a href="#解决方案二（布隆过滤器）" class="headerlink" title="解决方案二（布隆过滤器）"></a>解决方案二（布隆过滤器）</h3><p>布隆过滤器底层使用bitmap(位图)作为数据结构，数据通过一系列的Hash扰动函数，计算出相应下标位置，将计算位从0置为1。</p>
@@ -1666,7 +1666,7 @@
   </entry>
   <entry>
     <title>JWT登录</title>
-    <url>/2024/07/10/JWT%E7%99%BB%E5%BD%95/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/07/10/JWT%E7%99%BB%E5%BD%95/</url>
     <content><![CDATA[<h2 id="什么是JWT？"><a href="#什么是JWT？" class="headerlink" title="什么是JWT？"></a>什么是JWT？</h2><p>JWT，全称是Json Web Token， 是JSON风格轻量级的授权和身份认证规范，可实现无状态、分布式的Web应用授权；官网：<a class="link"   href="https://jwt.io/" >https://jwt.io <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
 <p>后端利用JWT生成一个加密token，里面存有用户信息，在登录或者注册请求完成后将token返回给前端， 以后前端发送请求将在请求头中携带token，后端将从请求头中拿到token并解析判断是否有效</p>
 <h2 id="依赖配置（jjwt）"><a href="#依赖配置（jjwt）" class="headerlink" title="依赖配置（jjwt）"></a>依赖配置（jjwt）</h2><div class="highlight-container" data-rel="Xml"><figure class="iseeu highlight xml"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>io.jsonwebtoken<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jjwt<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>0.9.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 如果你使用的是 Java 9 或更高版本，还需要添加以下依赖来避免 javax.xml.bind.DatatypeConverter 问题 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">groupId</span>&gt;</span>javax.xml.bind<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jaxb-api<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">version</span>&gt;</span>2.3.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure></div>
@@ -1695,7 +1695,7 @@
   </entry>
   <entry>
     <title>设计模式</title>
-    <url>/2024/08/06/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/</url>
+    <url>/the-wayee/the-wayee.github.io/2024/08/06/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/</url>
     <content><![CDATA[<h2 id="六大设计原则"><a href="#六大设计原则" class="headerlink" title="六大设计原则"></a>六大设计原则</h2><h3 id="单一职责原则"><a href="#单一职责原则" class="headerlink" title="单一职责原则"></a>单一职责原则</h3><p>不同的类具备不同的职责，各司其职。做系统设计时，如果发现有一个类拥有了两种职责，那么就要问一个问题：可以将这个类分成两个类吗？如果真的有必要，那就分开，千万不要让一个类干的事情太多。</p>
 <p><strong>总结</strong>：一个类只承担一个职责</p>
 <h3 id="开闭原则"><a href="#开闭原则" class="headerlink" title="开闭原则"></a>开闭原则</h3><p>类、模块、函数，可以去扩展，但不要去修改。如果要修改代码，尽量用继承或组合的方式来扩展类的功能，而不是直接修改类的代码。</p>
